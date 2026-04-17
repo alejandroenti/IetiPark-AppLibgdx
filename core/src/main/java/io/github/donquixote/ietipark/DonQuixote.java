@@ -10,6 +10,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
+import io.github.donquixote.ietipark.screens.MainMenu;
+
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class DonQuixote extends Game {
     public SpriteBatch batch;
@@ -21,6 +23,8 @@ public class DonQuixote extends Game {
         batch = new SpriteBatch();
         skin = new Skin(Gdx.files.internal("skin/golden-ui-skin.json"));
         viewport = new FitViewport(8, 5);
+
+        this.setScreen(new MainMenu(this));
     }
 
     @Override
