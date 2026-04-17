@@ -62,6 +62,11 @@ cd IetiPark-AppLibgdx
 ./gradlew android:assembleDebug
 ```
 
+## Projectes relacionats
+
+- [IetiPark - Web](https://github.com/alejandroenti/IetiPark-AppLibgdx) — Visualitzador de la partida del joc IetiPart fent servir Flutter
+- [IetiPark - Server](https://github.com/alejandroenti/IetiPark-AppLibgdx) — Servidor de s'encarrega de la comunicació del joc IetiPark fent servir NodeJS
+
 ## 📄 Llicència
 
 Aquest projecte està llicenciat sota la **GNU General Public License v3.0**. Consulta el fitxer [LICENSE](LICENSE) per a més detalls.
