@@ -3,7 +3,7 @@ package io.github.donquixote.ietipark.gwt;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.gwt.GwtApplication;
 import com.badlogic.gdx.backends.gwt.GwtApplicationConfiguration;
-import io.github.donquixote.ietipark.Main;
+import io.github.donquixote.ietipark.DonQuixote;
 
 /** Launches the GWT application. */
 public class GwtLauncher extends GwtApplication {
@@ -20,6 +20,6 @@ public class GwtLauncher extends GwtApplication {
         }
         @Override
         public ApplicationListener createApplicationListener () {
-            return new Main();
+            return new DonQuixote();
         }
 }
