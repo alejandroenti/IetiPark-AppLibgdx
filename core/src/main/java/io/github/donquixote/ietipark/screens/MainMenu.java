@@ -1,5 +1,6 @@
 package io.github.donquixote.ietipark.screens;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -16,7 +17,7 @@ public class MainMenu  implements Screen {
     final DonQuixote game;
 
     private Stage stage;
-    private TextField taskInput;
+    private TextField playerNameInput;
 
     public MainMenu(DonQuixote game) {
         this.game = game;
@@ -25,47 +26,46 @@ public class MainMenu  implements Screen {
 
         Table root = new Table();
         root.setFillParent(true);
-        root.top().pad(20);
         stage.addActor(root);
 
+        // Taula per a tenir el contingut centrat
+        Table content = new Table();
+        content.setBackground(this.game.skin.getDrawable("window"));
+        content.pad(40);
+
         // Títol
-        Label title = new Label("IETI Park", this.game.skin, "big");
-        root.add(title).colspan(2).padBottom(20);
-        root.row();
+        Label title = new Label("IETI Park", this.game.skin, "title");
+        content.add(title).padBottom(32).row();
 
         // Entrada del nom
-        taskInput = new TextField("", this.game.skin);
-        taskInput.setMessageText("Entra el teu nom d'usuari");
-        root.add(taskInput).expandX().fillX().padRight(10);
-        root.row();
+        playerNameInput = new TextField("", this.game.skin);
+        playerNameInput.setMessageText("Entra el teu nom d'usuari");
+        content.add(playerNameInput).width(500).padBottom(24).row();
 
         // Connectar amb el servidor
-        TextButton addButton = new TextButton("Jugar!", this.game.skin, "small");
-        root.add(addButton).width(120).height(40);
-        root.row();
+        TextButton addButton = new TextButton("Jugar!", this.game.skin);
+        content.add(addButton).width(220).height(110).row();
 
+        root.add(content);
+
+        Gdx.input.setInputProcessor(stage);
     }
 
     @Override
     public void show() {
-
     }
 
     @Override
     public void render(float delta) {
         ScreenUtils.clear(Color.BLACK);
 
-        game.viewport.apply();
-        game.batch.setProjectionMatrix(game.viewport.getCamera().combined);
-
-        game.batch.begin();
-
-        game.batch.end();
+        stage.act(delta);
+        stage.draw();
     }
 
     @Override
     public void resize(int width, int height) {
-        game.viewport.update(width, height, true);
+        stage.getViewport().update(width, height, true);
     }
 
     @Override
@@ -85,6 +85,6 @@ public class MainMenu  implements Screen {
 
     @Override
     public void dispose() {
-
+        stage.dispose();
     }
 }
