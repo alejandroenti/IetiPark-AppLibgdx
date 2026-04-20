@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import io.github.donquixote.ietipark.DonQuixote;
 import io.github.donquixote.ietipark.configuration.JsonMessage;
+import io.github.donquixote.ietipark.configuration.PlayerMessage;
 
 public class MainMenu implements Screen, IScreen {
 
@@ -168,7 +169,8 @@ public class MainMenu implements Screen, IScreen {
         String[] players = msg.fromJson(String[].class, payload);
         game.config.players.clear();
         for (String player : players) {
-            game.config.players.add(player);
+            PlayerMessage pmsg = msg.fromJson(PlayerMessage.class, player);
+            game.config.players.add(pmsg.name);
         }
         Gdx.app.postRunnable(() -> {
             playerNames.clear();
