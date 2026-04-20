@@ -17,7 +17,6 @@ public class WebSocketClient implements WebSocketListener {
     @Override
     public boolean onOpen(WebSocket webSocket) {
         System.out.println("Opening...");
-        game.config.players.add("xd");
         return false;
     }
 
