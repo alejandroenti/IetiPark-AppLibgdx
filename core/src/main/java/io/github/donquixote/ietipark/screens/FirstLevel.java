@@ -72,10 +72,10 @@ public class FirstLevel implements Screen, IScreen {
         gameObjects.add(new GameObject("door", doorFrame, 736, 0, 96, this.game.viewport.getWorldHeight()));
 
         float density = Gdx.graphics.getDensity();
-        int bgSize = (int) (48 * density);
-        int knobSize = (int) (32 * density);
-        int padSize = (int) (64 * density);
-        int padMargin = (int) (16 * density);
+        int bgSize = (int) (36 * density);
+        int knobSize = (int) (24 * density);
+        int padSize = (int) (36 * density);
+        int padMargin = (int) (2 * density);
 
         touchpadBgTexture = createCircleTexture(bgSize, new Color(0.3f, 0.3f, 0.3f, 0.5f));
         touchpadKnobTexture = createCircleTexture(knobSize, new Color(0.7f, 0.7f, 0.7f, 0.8f));
