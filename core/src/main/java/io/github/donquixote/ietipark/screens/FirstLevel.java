@@ -2,281 +2,119 @@ package io.github.donquixote.ietipark.screens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.ScreenUtils;
+
+import java.util.ArrayList;
 
 import io.github.donquixote.ietipark.DonQuixote;
-import io.github.donquixote.ietipark.gametools.LevelData;
-import io.github.donquixote.ietipark.gametools.LevelLoader;
-import io.github.donquixote.ietipark.gametools.LevelRenderer;
-import io.github.donquixote.ietipark.gametools.LevelRenderer.SpriteRuntimeState;
-import io.github.donquixote.ietipark.gametools.RuntimeTransform;
+import io.github.donquixote.ietipark.configuration.GameObject;
+import io.github.donquixote.ietipark.configuration.GameObjectMessage;
+import io.github.donquixote.ietipark.configuration.MessageParser;
+import io.github.donquixote.ietipark.configuration.PlayerMessage;
 
 public class FirstLevel implements Screen, IScreen {
     private final DonQuixote game;
 
-    private static final float MOVE_SPEED = 80f;
-    private static final String WALK_ANIM_ID = "anim_1776702668697288";
-    private static final String IDLE_ANIM_ID = "anim_1776702618726446";
+    private ArrayList<GameObject> gameObjects;
 
-    private LevelData levelData;
-    private LevelRenderer levelRenderer;
-    private AssetManager assetManager;
-    private OrthographicCamera camera;
-    private Viewport viewport;
+    private Texture backgroundTexture;
+    private Texture characterTexture;
+    private Texture keyTexture;
+    private Texture doorTexture;
+    private Texture touchpadBgTexture;
+    private Texture touchpadKnobTexture;
 
-    private Array<SpriteRuntimeState> spriteRuntimeStates;
-    private Array<RuntimeTransform> layerRuntimeTransforms;
-    private boolean assetsLoaded;
+    TextureRegion[][] characterRegion;
+    TextureRegion[][] keyRegion;
+    TextureRegion[][] doorRegion;
+    TextureRegion characterFrame;
+    TextureRegion keyFrame;
+    TextureRegion doorFrame;
 
-    private int playerSpriteIndex = -1;
-    private float playerYDown;
-    private float animTimer;
-    private boolean touchMovingLeft;
-    private boolean touchMovingRight;
+    private Stage uiStage;
+    private Touchpad touchpad;
+
+    private int dir;
 
     public FirstLevel(DonQuixote game) {
         this.game = game;
+        gameObjects = new ArrayList<>();
+
+        backgroundTexture = new Texture(Gdx.files.internal("mvp/background.png"));
+        characterTexture = new Texture(Gdx.files.internal("mvp/quixote_1.png"));
+        keyTexture = new Texture(Gdx.files.internal("mvp/key.png"));
+        doorTexture = new Texture(Gdx.files.internal("mvp/door.png"));
+
+        characterRegion = TextureRegion.split(characterTexture, characterTexture.getWidth(), characterTexture.getHeight());
+        keyRegion = TextureRegion.split(keyTexture, keyTexture.getWidth(), keyTexture.getHeight());
+        doorRegion = TextureRegion.split(doorTexture, doorTexture.getWidth(), doorTexture.getHeight());
+
+        characterFrame = characterRegion[0][0];
+        keyFrame = keyRegion[0][0];
+        doorFrame = doorRegion[0][0];
+
+        for (String name : this.game.config.players) {
+            gameObjects.add(new GameObject(name, characterFrame, 0, 80, 96, 96));
+        }
+        gameObjects.add(new GameObject("key", keyFrame, 100, 100, 64, 64));
+        gameObjects.add(new GameObject("door", doorFrame, 736, 0, 96, this.game.viewport.getWorldHeight()));
+
+        float density = Gdx.graphics.getDensity();
+        int bgSize = (int) (48 * density);
+        int knobSize = (int) (32 * density);
+        int padSize = (int) (64 * density);
+        int padMargin = (int) (16 * density);
+
+        touchpadBgTexture = createCircleTexture(bgSize, new Color(0.3f, 0.3f, 0.3f, 0.5f));
+        touchpadKnobTexture = createCircleTexture(knobSize, new Color(0.7f, 0.7f, 0.7f, 0.8f));
+
+        Drawable touchpadBg = new TextureRegionDrawable(new TextureRegion(touchpadBgTexture));
+        Drawable touchpadKnob = new TextureRegionDrawable(new TextureRegion(touchpadKnobTexture));
+
+        Touchpad.TouchpadStyle touchpadStyle = new Touchpad.TouchpadStyle();
+        touchpadStyle.background = touchpadBg;
+        touchpadStyle.knob = touchpadKnob;
+
+        touchpad = new Touchpad(5 * density, touchpadStyle);
+        touchpad.setBounds(padMargin, padMargin, padSize, padSize);
+
+        uiStage = new Stage(this.game.viewport);
+        uiStage.addActor(touchpad);
+        Gdx.input.setInputProcessor(uiStage);
+
+        dir = 0;
     }
 
     @Override
     public void show() {
-        levelData = LevelLoader.loadLevel(0);
-        levelRenderer = new LevelRenderer();
-        assetManager = new AssetManager();
 
-        camera = new OrthographicCamera();
-        viewport = new FitViewport(levelData.viewportWidth, levelData.viewportHeight, camera);
-
-        // Queue texture assets for layers
-        for (int i = 0; i < levelData.layers.size; i++) {
-            LevelData.LevelLayer layer = levelData.layers.get(i);
-            if (!assetManager.isLoaded(layer.tilesTexturePath, Texture.class)) {
-                assetManager.load(layer.tilesTexturePath, Texture.class);
-            }
-        }
-
-        // Queue texture assets for sprites
-        for (int i = 0; i < levelData.sprites.size; i++) {
-            LevelData.LevelSprite sprite = levelData.sprites.get(i);
-            if (!assetManager.isLoaded(sprite.texturePath, Texture.class)) {
-                assetManager.load(sprite.texturePath, Texture.class);
-            }
-        }
-
-        // Load walk animation texture
-        LevelData.AnimationClip walkClip = levelData.animationClips.get(WALK_ANIM_ID);
-        if (walkClip != null && walkClip.texturePath != null) {
-            if (!assetManager.isLoaded(walkClip.texturePath, Texture.class)) {
-                assetManager.load(walkClip.texturePath, Texture.class);
-            }
-        }
-
-        // Find ground Y from tilemap (first non-empty row)
-        float groundYDown = levelData.worldHeight;
-        if (levelData.layers.size > 0) {
-            LevelData.LevelLayer layer = levelData.layers.get(0);
-            for (int row = 0; row < layer.tileMap.length; row++) {
-                boolean hasContent = false;
-                for (int col = 0; col < layer.tileMap[row].length; col++) {
-                    if (layer.tileMap[row][col] >= 0) {
-                        hasContent = true;
-                        break;
-                    }
-                }
-                if (hasContent) {
-                    groundYDown = layer.y + row * layer.tileHeight;
-                    break;
-                }
-            }
-        }
-
-        // Initialize sprite runtime states and place player on the ground
-        spriteRuntimeStates = new Array<>(levelData.sprites.size);
-        for (int i = 0; i < levelData.sprites.size; i++) {
-            LevelData.LevelSprite sprite = levelData.sprites.get(i);
-            float spawnX = sprite.x;
-            float spawnY = sprite.y;
-
-            if ("quixote".equals(sprite.type) || "quixote".equals(sprite.name)) {
-                playerSpriteIndex = i;
-                spawnX = levelData.viewportWidth / 2f;
-                spawnY = groundYDown - sprite.height * (1f - sprite.anchorY);
-                playerYDown = spawnY;
-            }
-
-            spriteRuntimeStates.add(new SpriteRuntimeState(
-                sprite.frameIndex,
-                sprite.anchorX,
-                sprite.anchorY,
-                spawnX,
-                spawnY,
-                true,
-                sprite.flipX,
-                sprite.flipY,
-                Math.max(1, Math.round(sprite.width)),
-                Math.max(1, Math.round(sprite.height)),
-                sprite.texturePath,
-                sprite.animationId
-            ));
-        }
-
-        // Initialize layer runtime transforms
-        layerRuntimeTransforms = new Array<>(levelData.layers.size);
-        for (int i = 0; i < levelData.layers.size; i++) {
-            LevelData.LevelLayer layer = levelData.layers.get(i);
-            layerRuntimeTransforms.add(new RuntimeTransform(layer.x, layer.y));
-        }
-
-        // Center camera on the player
-        updateCameraPosition();
-
-        // Input handling for touch movement
-        Gdx.input.setInputProcessor(new InputAdapter() {
-            @Override
-            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                float halfScreen = Gdx.graphics.getWidth() / 2f;
-                if (screenX < halfScreen) {
-                    touchMovingLeft = true;
-                } else {
-                    touchMovingRight = true;
-                }
-                return true;
-            }
-
-            @Override
-            public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-                touchMovingLeft = false;
-                touchMovingRight = false;
-                return true;
-            }
-        });
-
-        assetsLoaded = false;
-        animTimer = 0f;
-    }
-
-    private void updateCameraPosition() {
-        if (playerSpriteIndex < 0) return;
-        SpriteRuntimeState player = spriteRuntimeStates.get(playerSpriteIndex);
-
-        float halfW = levelData.viewportWidth / 2f;
-        float halfH = levelData.viewportHeight / 2f;
-
-        // Convert player y-down to y-up for camera
-        float camX = MathUtils.clamp(player.worldX, halfW, levelData.worldWidth - halfW);
-        float camYUp = levelData.worldHeight - player.worldY;
-        camYUp = MathUtils.clamp(camYUp, halfH, levelData.worldHeight - halfH);
-
-        camera.position.set(camX, camYUp, 0f);
-        camera.update();
     }
 
     @Override
     public void render(float delta) {
-        if (assetManager == null) {
-            return;
+        input();
+        draw();
+        if (uiStage != null) {
+            uiStage.act(Gdx.graphics.getDeltaTime());
+            uiStage.draw();
         }
-        if (!assetsLoaded) {
-            if (assetManager.update()) {
-                assetsLoaded = true;
-            } else {
-                Gdx.gl.glClearColor(
-                    levelData.backgroundColor.r,
-                    levelData.backgroundColor.g,
-                    levelData.backgroundColor.b,
-                    levelData.backgroundColor.a
-                );
-                Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-                return;
-            }
-        }
-
-        // Handle input
-        float dx = 0f;
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A) || touchMovingLeft) {
-            dx -= MOVE_SPEED * delta;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D) || touchMovingRight) {
-            dx += MOVE_SPEED * delta;
-        }
-
-        // Update player sprite
-        if (playerSpriteIndex >= 0) {
-            SpriteRuntimeState player = spriteRuntimeStates.get(playerSpriteIndex);
-            LevelData.LevelSprite playerSprite = levelData.sprites.get(playerSpriteIndex);
-            player.worldX += dx;
-            player.worldX = MathUtils.clamp(player.worldX, playerSprite.width * player.anchorX,
-                levelData.worldWidth - playerSprite.width * (1f - player.anchorX));
-            player.worldY = playerYDown;
-
-            boolean moving = dx != 0f;
-
-            // Flip sprite based on movement direction
-            if (dx < 0f) player.flipX = true;
-            if (dx > 0f) player.flipX = false;
-
-            // Switch between walk and idle animation
-            LevelData.AnimationClip walkClip = levelData.animationClips.get(WALK_ANIM_ID);
-            LevelData.AnimationClip idleClip = levelData.animationClips.get(IDLE_ANIM_ID);
-
-            if (moving && walkClip != null) {
-                player.texturePath = walkClip.texturePath;
-                player.animationId = WALK_ANIM_ID;
-                player.frameWidth = walkClip.frameWidth;
-                player.frameHeight = walkClip.frameHeight;
-                animTimer += delta;
-                float frameDuration = 1f / walkClip.fps;
-                int totalFrames = walkClip.endFrame - walkClip.startFrame + 1;
-                player.frameIndex = walkClip.startFrame + ((int) (animTimer / frameDuration) % totalFrames);
-            } else if (idleClip != null) {
-                player.texturePath = idleClip.texturePath;
-                player.animationId = IDLE_ANIM_ID;
-                player.frameWidth = idleClip.frameWidth;
-                player.frameHeight = idleClip.frameHeight;
-                player.frameIndex = idleClip.startFrame;
-                animTimer = 0f;
-            }
-
-            updateCameraPosition();
-        }
-
-        // Render
-        Gdx.gl.glClearColor(
-            levelData.backgroundColor.r,
-            levelData.backgroundColor.g,
-            levelData.backgroundColor.b,
-            levelData.backgroundColor.a
-        );
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        viewport.apply();
-        game.batch.setProjectionMatrix(camera.combined);
-        game.batch.begin();
-        levelRenderer.render(
-            levelData,
-            assetManager,
-            game.batch,
-            camera,
-            spriteRuntimeStates,
-            null,
-            layerRuntimeTransforms
-        );
-        game.batch.end();
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
-        updateCameraPosition();
+        this.game.viewport.update(width, height, true);
+        if (uiStage != null) {
+            uiStage.getViewport().update(width, height, true);
+        }
     }
 
     @Override
@@ -290,11 +128,105 @@ public class FirstLevel implements Screen, IScreen {
 
     @Override
     public void dispose() {
-        if (assetManager != null) {
-            assetManager.dispose();
+        backgroundTexture.dispose();
+        characterTexture.dispose();
+        keyTexture.dispose();
+        doorTexture.dispose();
+
+        if (uiStage != null) {
+            uiStage.dispose();
+            touchpadBgTexture.dispose();
+            touchpadKnobTexture.dispose();
         }
     }
 
     @Override
-    public void handleMessage(String message) {}
+    public void handleMessage(String message) {
+        MessageParser.ParsedMessage parsed = MessageParser.parse(message);
+
+        switch (parsed.type) {
+            case "GAME STATE":
+                handleGameState(MessageParser.parseGameObjects(parsed.payload));
+                break;
+            case "PLAYERS":
+                handlePlayers(MessageParser.parsePlayers(parsed.payload));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private Texture createCircleTexture(int diameter, Color color) {
+        Pixmap pixmap = new Pixmap(diameter, diameter, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fillCircle(diameter / 2, diameter / 2, diameter / 2 - 1);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private void input() {
+        // Read from touchpad on Android
+        float knobX = touchpad != null ? touchpad.getKnobPercentX() : 0;
+
+        if (knobX > 0.2f) {
+            if (dir != 1) {
+                dir = 1;
+                game.ws.send("{\"type\": \"MOVE\", \"payload\": \"RIGHT\"}");
+            }
+        } else if (knobX < -0.2f) {
+            if (dir != -1) {
+                dir = -1;
+                game.ws.send("{\"type\": \"MOVE\", \"payload\": \"LEFT\"}");
+            }
+        } else {
+            if (dir != 0) {
+                dir = 0;
+                game.ws.send("{\"type\": \"MOVE\", \"payload\": \"NONE\"}");
+            }
+        }
+    }
+
+    private void draw() {
+        ScreenUtils.clear(Color.BLACK);
+        this.game.viewport.apply();
+        this.game.batch.setProjectionMatrix(this.game.viewport.getCamera().combined);
+
+        this.game.batch.begin();
+
+        this.game.batch.draw(backgroundTexture, 0, 0, this.game.viewport.getWorldWidth(), this.game.viewport.getWorldHeight());
+        for (GameObject go : gameObjects) {
+            this.game.batch.draw(go.getTexture(), go.getPosX(), go.getPosY(), go.getDimenX(), go.getDimenY());
+        }
+
+        this.game.batch.end();
+    }
+
+    private void handleGameState(GameObjectMessage[] gameObjectsMsg) {
+        for (GameObjectMessage gom : gameObjectsMsg) {
+            for (GameObject go : gameObjects) {
+                if (gom.name.equals(go.getName())) {
+                    go.setPosX(gom.posX);
+                    go.setPosY(gom.posY);
+                }
+            }
+        }
+    }
+
+    private void handlePlayers(PlayerMessage[] players) {
+        ArrayList<String> playerNames = new ArrayList<>();
+
+        for (GameObject go : gameObjects) {
+            playerNames.add(go.getName());
+        }
+
+        game.config.players.clear();
+        for (PlayerMessage player : players) {
+            game.config.players.add(player.name);
+
+            if (!playerNames.contains(player.name)) {
+                gameObjects.add(new GameObject(player.name, characterFrame, 0, 0, 128, 128));
+            }
+        }
+    }
 }
