@@ -1,19 +1,19 @@
 package io.github.donquixote.ietipark.screens;
 
+import java.util.ArrayList;
+
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Touchpad;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
-
-import java.util.ArrayList;
 
 import io.github.donquixote.ietipark.DonQuixote;
 import io.github.donquixote.ietipark.configuration.GameObject;
@@ -32,6 +32,7 @@ public class FirstLevel implements Screen, IScreen {
     private Texture doorTexture;
     private Texture touchpadBgTexture;
     private Texture touchpadKnobTexture;
+    private Texture jumpBtnTexture;
 
     TextureRegion[][] characterRegion;
     TextureRegion[][] keyRegion;
@@ -42,8 +43,10 @@ public class FirstLevel implements Screen, IScreen {
 
     private Stage uiStage;
     private Touchpad touchpad;
+    private ImageButton jumpButton;
 
     private int dir;
+    private boolean jumpPressed;
 
     public FirstLevel(DonQuixote game) {
         this.game = game;
@@ -76,9 +79,11 @@ public class FirstLevel implements Screen, IScreen {
 
         touchpadBgTexture = createCircleTexture(bgSize, new Color(0.3f, 0.3f, 0.3f, 0.5f));
         touchpadKnobTexture = createCircleTexture(knobSize, new Color(0.7f, 0.7f, 0.7f, 0.8f));
+        jumpBtnTexture = createCircleTexture(knobSize, new Color(0.7f, 0.7f, 0.7f, 0.8f));
 
         Drawable touchpadBg = new TextureRegionDrawable(new TextureRegion(touchpadBgTexture));
         Drawable touchpadKnob = new TextureRegionDrawable(new TextureRegion(touchpadKnobTexture));
+        Drawable jumpBtn = new TextureRegionDrawable(new TextureRegion(jumpBtnTexture));
 
         Touchpad.TouchpadStyle touchpadStyle = new Touchpad.TouchpadStyle();
         touchpadStyle.background = touchpadBg;
@@ -87,11 +92,30 @@ public class FirstLevel implements Screen, IScreen {
         touchpad = new Touchpad(5 * density, touchpadStyle);
         touchpad.setBounds(padMargin, padMargin, padSize, padSize);
 
+        ImageButton.ImageButtonStyle jumpStyle = new ImageButton.ImageButtonStyle();
+        jumpStyle.imageUp = jumpBtn;
+        jumpButton = new ImageButton(jumpStyle);
+        int jumpBtnSize = (int) (knobSize * 1.5f);
+        jumpButton.setBounds(
+            this.game.viewport.getWorldWidth() - padMargin - jumpBtnSize,
+            padMargin,
+            jumpBtnSize,
+            jumpBtnSize
+        );
+        jumpButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+            @Override
+            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+                jumpPressed = true;
+            }
+        });
+
         uiStage = new Stage(this.game.viewport);
         uiStage.addActor(touchpad);
+        uiStage.addActor(jumpButton);
         Gdx.input.setInputProcessor(uiStage);
 
         dir = 0;
+        jumpPressed = false;
     }
 
     @Override
@@ -137,6 +161,7 @@ public class FirstLevel implements Screen, IScreen {
             uiStage.dispose();
             touchpadBgTexture.dispose();
             touchpadKnobTexture.dispose();
+            jumpBtnTexture.dispose();
         }
     }
 
@@ -184,6 +209,11 @@ public class FirstLevel implements Screen, IScreen {
                 dir = 0;
                 game.ws.send("{\"type\": \"MOVE\", \"payload\": \"NONE\"}");
             }
+        }
+
+        if (jumpPressed) {
+            jumpPressed = false;
+            game.ws.send("{\"type\": \"JUMP\", \"payload\": null}");
         }
     }
 
