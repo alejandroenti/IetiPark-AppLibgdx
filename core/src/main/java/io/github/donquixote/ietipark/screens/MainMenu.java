@@ -13,6 +13,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import io.github.donquixote.ietipark.DonQuixote;
 import io.github.donquixote.ietipark.configuration.MessageParser;
@@ -29,7 +30,7 @@ public class MainMenu implements Screen, IScreen {
     public MainMenu(DonQuixote game) {
         this.game = game;
 
-        stage = new Stage(this.game.viewport);
+        stage = new Stage(new ExtendViewport(800, 480));
 
         Table root = new Table();
         root.setFillParent(true);
@@ -55,7 +56,6 @@ public class MainMenu implements Screen, IScreen {
                 game.config.name = playerNameInput.getText().trim();
                 playerNameInput.setText("");
                 game.ws.send("{\"type\": \"JOIN\", \"payload\": \"" + game.config.name + "\"}");
-                //handleJoin();
             }
         });
 
@@ -126,7 +126,6 @@ public class MainMenu implements Screen, IScreen {
     @Override
     public void handleMessage(String message) {
         MessageParser.ParsedMessage parsed = MessageParser.parse(message);
-
         switch (parsed.type) {
             case "ACCEPTED JOIN":
                 handleJoin();
@@ -138,12 +137,12 @@ public class MainMenu implements Screen, IScreen {
                 handlePlayers(MessageParser.parsePlayers(parsed.payload));
                 break;
             default:
-                throw new AssertionError();
+                break;
         }
     }
 
     private void handleJoin() {
-        game.setScreen(new FirstLevel(game));
+        Gdx.app.postRunnable(() -> game.setScreen(new FirstLevel(game)));
     }
 
     private void handleRefusedJoin() {

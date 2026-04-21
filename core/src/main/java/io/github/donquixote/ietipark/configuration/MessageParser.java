@@ -28,6 +28,20 @@ public class MessageParser {
         return players;
     }
 
+    public static GameObjectMessage[] parseGameObjects(JsonValue payload) {
+        if (payload == null || payload.isNull()) return new GameObjectMessage[0];
+        GameObjectMessage[] gameObjects = new GameObjectMessage[payload.size];
+        int i = 0;
+        for (JsonValue p : payload) {
+            GameObjectMessage gom = new GameObjectMessage();
+            gom.name = p.getString("name",   null);
+            gom.posX = p.getFloat("x", 0f);
+            gom.posY = p.getFloat("y", 0f);
+            gameObjects[i++] = gom;
+        }
+        return gameObjects;
+    }
+
     public static class ParsedMessage {
         public String    type;
         public JsonValue payload;
