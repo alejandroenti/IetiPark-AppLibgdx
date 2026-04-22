@@ -226,7 +226,7 @@ public class FirstLevel implements Screen, IScreen {
 
         this.game.batch.draw(backgroundTexture, 0, 0, this.game.viewport.getWorldWidth(), this.game.viewport.getWorldHeight());
         for (GameObject go : gameObjects) {
-            this.game.batch.draw(go.getTexture(), go.getPosX(), go.getPosY(), go.getDimenX(), go.getDimenY());
+            this.game.batch.draw(go.getTexture(), go.getPosX(), go.getPosY() + 80, go.getDimenX(), go.getDimenY());
         }
 
         this.game.batch.end();
@@ -255,7 +255,7 @@ public class FirstLevel implements Screen, IScreen {
             game.config.players.add(player.name);
 
             if (!playerNames.contains(player.name)) {
-                gameObjects.add(new GameObject(player.name, characterFrame, 0, 0, 128, 128));
+                gameObjects.add(new GameObject(player.name, characterFrame, 0, 80, 96, 96));
             }
         }
     }
