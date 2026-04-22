@@ -1,4 +1,14 @@
 
+
+
+
+
+
+
+
+
+
+
 Joc mòbil multijugador inspirat en [Pico Park](https://picoparkgame.com/en/pp1/), desenvolupat amb **LibGDX**.
 
 Els jugadors han de cooperar per superar nivells plens de plataformes i trencaclosques, treballant junts en temps real.
