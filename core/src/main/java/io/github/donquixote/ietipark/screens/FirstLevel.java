@@ -81,10 +81,8 @@ public class FirstLevel implements Screen, IScreen {
 
     private void loadSpriteFromData(LevelLoader.SpriteData spriteData) {
         try {
-            // Get or load texture
             Texture spriteTexture;
             String texturePath = "levels/" + spriteData.imageFile;
-            
             if (textureCache.containsKey(spriteData.imageFile)) {
                 spriteTexture = textureCache.get(spriteData.imageFile);
             } else {
@@ -92,40 +90,21 @@ public class FirstLevel implements Screen, IScreen {
                 textureCache.put(spriteData.imageFile, spriteTexture);
             }
 
-            // Create animated game object
-            TextureRegion initialFrame = new TextureRegion(spriteTexture);
             AnimatedGameObject gameObject = new AnimatedGameObject(
                 spriteData.name,
-                initialFrame,
+                new TextureRegion(spriteTexture),
                 spriteData.x,
                 spriteData.y,
                 spriteData.width,
                 spriteData.height
             );
 
-            // Set up animation if animation ID exists
-            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
-                LevelLoader.AnimationData animData = animations.get(spriteData.animationId);
-                String animTexturePath = "levels/" + animData.mediaFile;
-                
-                Texture animTexture;
-                if (textureCache.containsKey(animData.mediaFile)) {
-                    animTexture = textureCache.get(animData.mediaFile);
-                } else {
-                    animTexture = new Texture(Gdx.files.internal(animTexturePath));
-                    textureCache.put(animData.mediaFile, animTexture);
-                }
+            // Load all animations into this instance
+            addAllAnimationsTo(gameObject);
 
-                gameObject.setAnimation(
-                    animTexture,
-                    spriteData.width,
-                    spriteData.height,
-                    animData.startFrame,
-                    animData.endFrame,
-                    animData.fps,
-                    animData.loop,
-                    spriteData.animationId
-                );
+            // Play the animation assigned to this sprite
+            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+                gameObject.playAnimation(animations.get(spriteData.animationId).name);
             }
 
             gameObjects.add(gameObject);
@@ -134,14 +113,30 @@ public class FirstLevel implements Screen, IScreen {
         }
     }
 
+    private void addAllAnimationsTo(AnimatedGameObject obj) {
+        for (LevelLoader.AnimationData animData : animationsByName.values()) {
+            Texture animTexture;
+            if (textureCache.containsKey(animData.mediaFile)) {
+                animTexture = textureCache.get(animData.mediaFile);
+            } else {
+                animTexture = new Texture(Gdx.files.internal("levels/" + animData.mediaFile));
+                textureCache.put(animData.mediaFile, animTexture);
+            }
+            int fw = animData.frameWidth  > 0 ? animData.frameWidth  : (int) obj.getDimenX();
+            int fh = animData.frameHeight > 0 ? animData.frameHeight : (int) obj.getDimenY();
+            obj.addAnimation(animData.name, animTexture, fw, fh,
+                animData.startFrame, animData.endFrame, animData.fps, animData.loop);
+        }
+    }
+
     private void setupUI() {
         float worldHeight = this.game.viewport.getWorldHeight();
         float worldWidth  = this.game.viewport.getWorldWidth();
 
-        int bgSize    = (int) (worldHeight * 0.14f);  // ~151 units
-        int knobSize  = (int) (worldHeight * 0.08f);  // ~86  units
-        int padSize   = (int) (worldHeight * 0.14f);  // ~151 units
-        int padMargin = (int) (worldHeight * 0.02f);  // ~22  units
+        int bgSize    = (int) (worldHeight * 0.14f);
+        int knobSize  = (int) (worldHeight * 0.08f);
+        int padSize   = (int) (worldHeight * 0.14f);
+        int padMargin = (int) (worldHeight * 0.02f);
 
         touchpadBgTexture = createCircleTexture(bgSize, new Color(0.3f, 0.3f, 0.3f, 0.5f));
         touchpadKnobTexture = createCircleTexture(knobSize, new Color(0.7f, 0.7f, 0.7f, 0.8f));
@@ -276,13 +271,15 @@ public class FirstLevel implements Screen, IScreen {
         if (knobX > 0.2f) {
             if (dir != 1) {
                 dir = 1;
-                setPlayersFlipX(false);
+                setFlipX("qweqweqwe", false);
+                changeAnimation("qweqweqwe", "quixote_walk");
                 game.ws.send("{\"type\": \"MOVE\", \"payload\": \"RIGHT\"}");
             }
         } else if (knobX < -0.2f) {
             if (dir != -1) {
                 dir = -1;
-                setPlayersFlipX(true);
+                setFlipX("qweqweqwe", true);
+                changeAnimation("qweqweqwe", "quixote_walk");
                 game.ws.send("{\"type\": \"MOVE\", \"payload\": \"LEFT\"}");
             }
         } else {
@@ -295,6 +292,7 @@ public class FirstLevel implements Screen, IScreen {
 
         if (jumpPressed) {
             jumpPressed = false;
+            changeAnimation("qweqweqwe", "quixote_walk_sheet_7");
             game.ws.send("{\"type\": \"JUMP\", \"payload\": null}");
         }
     }
@@ -347,10 +345,11 @@ public class FirstLevel implements Screen, IScreen {
         }
     }
 
-    private void setPlayersFlipX(boolean flip) {
+    private void setFlipX(String gameObjectName, boolean flip) {
         for (GameObject go : gameObjects) {
-            if (go instanceof AnimatedGameObject) {
+            if (go.getName().equals(gameObjectName) && go instanceof AnimatedGameObject) {
                 ((AnimatedGameObject) go).setFlipX(flip);
+                break;
             }
         }
     }
@@ -377,6 +376,8 @@ public class FirstLevel implements Screen, IScreen {
                     new TextureRegion(defaultTexture),
                     0, 80, 96, 96
                 );
+                addAllAnimationsTo(newPlayer);
+                newPlayer.playAnimation("quixote_idle_anim");
                 gameObjects.add(newPlayer);
             }
         }
@@ -387,34 +388,9 @@ public class FirstLevel implements Screen, IScreen {
      * e.g. changeAnimation("qweqweqwe", "quixote_idle_anim")
      */
     public void changeAnimation(String gameObjectName, String animationName) {
-        LevelLoader.AnimationData animData = animationsByName.get(animationName);
-        if (animData == null) {
-            Gdx.app.error("FirstLevel", "Animation not found by name: " + animationName);
-            return;
-        }
-
         for (GameObject go : gameObjects) {
             if (go.getName().equals(gameObjectName) && go instanceof AnimatedGameObject) {
-                AnimatedGameObject animObj = (AnimatedGameObject) go;
-
-                Texture animTexture;
-                if (textureCache.containsKey(animData.mediaFile)) {
-                    animTexture = textureCache.get(animData.mediaFile);
-                } else {
-                    animTexture = new Texture(Gdx.files.internal("levels/" + animData.mediaFile));
-                    textureCache.put(animData.mediaFile, animTexture);
-                }
-
-                animObj.setAnimation(
-                    animTexture,
-                    (int) animObj.getDimenX(),
-                    (int) animObj.getDimenY(),
-                    animData.startFrame,
-                    animData.endFrame,
-                    animData.fps,
-                    animData.loop,
-                    animData.id
-                );
+                ((AnimatedGameObject) go).playAnimation(animationName);
                 break;
             }
         }

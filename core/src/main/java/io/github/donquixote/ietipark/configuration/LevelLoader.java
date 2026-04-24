@@ -18,6 +18,8 @@ public class LevelLoader {
         public int endFrame;
         public float fps;
         public boolean loop;
+        public int frameWidth;
+        public int frameHeight;
     }
 
     public static class SpriteData {
@@ -43,11 +45,28 @@ public class LevelLoader {
     }
 
     public static Map<String, AnimationData> loadAnimations() {
+        // Build tile size lookup from mediaAssets in game_data.json
+        Map<String, int[]> mediaTileSizes = new HashMap<>();
+        try {
+            JsonValue gameData = reader.parse(Gdx.files.internal("levels/game_data.json"));
+            JsonValue mediaAssets = gameData.get("mediaAssets");
+            if (mediaAssets != null) {
+                for (JsonValue asset : mediaAssets) {
+                    String fileName = asset.getString("fileName");
+                    int tw = asset.getInt("tileWidth", 0);
+                    int th = asset.getInt("tileHeight", 0);
+                    mediaTileSizes.put(fileName, new int[]{tw, th});
+                }
+            }
+        } catch (Exception e) {
+            Gdx.app.error("LevelLoader", "Failed to load mediaAssets", e);
+        }
+
         Map<String, AnimationData> animations = new HashMap<>();
         try {
             JsonValue root = reader.parse(Gdx.files.internal("levels/animations/animations.json"));
             JsonValue animArray = root.get("animations");
-            
+
             if (animArray != null) {
                 for (JsonValue anim : animArray) {
                     AnimationData animData = new AnimationData();
@@ -58,6 +77,11 @@ public class LevelLoader {
                     animData.endFrame = anim.getInt("endFrame", 0);
                     animData.fps = anim.getFloat("fps", 12f);
                     animData.loop = anim.getBoolean("loop", true);
+                    int[] tileSizes = mediaTileSizes.get(animData.mediaFile);
+                    if (tileSizes != null) {
+                        animData.frameWidth  = tileSizes[0];
+                        animData.frameHeight = tileSizes[1];
+                    }
                     animations.put(animData.id, animData);
                 }
             }
