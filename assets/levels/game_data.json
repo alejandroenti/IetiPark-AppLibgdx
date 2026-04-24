@@ -34,11 +34,26 @@
           "gameplayData": "",
           "type": "quixote",
           "animationId": "anim_1776702618726446",
-          "x": 0,
-          "y": 0,
+          "x": 28,
+          "y": 338,
           "width": 32,
           "height": 32,
           "imageFile": "media/quixote_1.png",
+          "flipX": false,
+          "flipY": false,
+          "depth": 0.0,
+          "groupId": "__main__"
+        },
+        {
+          "name": "6666666",
+          "gameplayData": "",
+          "type": "6666666",
+          "animationId": "anim_1777037668573609",
+          "x": 514,
+          "y": 265,
+          "width": 225,
+          "height": 366,
+          "imageFile": "media/molino_1_3.png",
           "flipX": false,
           "flipY": false,
           "depth": 0.0,
@@ -53,17 +68,95 @@
         }
       ],
       "groupId": "__main__",
-      "viewportWidth": 320,
-      "viewportHeight": 180,
+      "viewportWidth": 1920,
+      "viewportHeight": 1080,
+      "viewportX": 0,
+      "viewportY": 0,
+      "viewportAdaptation": "letterbox",
+      "viewportInitialColor": "green",
+      "viewportPreviewColor": "red",
+      "backgroundColorHex": "#C4D2E3",
+      "depthSensitivity": 0.08,
+      "zonesFile": "zones/level_000_zones.json",
+      "pathsFile": "paths/level_000_paths.json"
+    },
+    {
+      "name": "prova",
+      "description": "",
+      "gameplayData": "",
+      "layers": [
+        {
+          "name": "sdsa",
+          "gameplayData": "",
+          "x": 0,
+          "y": 0,
+          "depth": 0.0,
+          "tilesSheetFile": "media/atlas.png",
+          "tilesWidth": 32,
+          "tilesHeight": 32,
+          "visible": true,
+          "groupId": "__main__",
+          "tileMapFile": "tilemaps/level_001_layer_000.json"
+        }
+      ],
+      "layerGroups": [
+        {
+          "id": "__main__",
+          "name": "Main",
+          "collapsed": false
+        }
+      ],
+      "sprites": [
+        {
+          "name": "qweqweqwe",
+          "gameplayData": "",
+          "type": "qweqweqwe",
+          "animationId": "anim_1776702668697288",
+          "x": 157,
+          "y": 290,
+          "width": 32,
+          "height": 32,
+          "imageFile": "media/quixote_walk_sheet_1.png",
+          "flipX": false,
+          "flipY": false,
+          "depth": 0.0,
+          "groupId": "__main__"
+        },
+        {
+          "name": "molino7",
+          "gameplayData": "",
+          "type": "molino7",
+          "animationId": "anim_1777037668573609",
+          "x": 765,
+          "y": 206,
+          "width": 225,
+          "height": 366,
+          "imageFile": "media/molino_1_3.png",
+          "flipX": false,
+          "flipY": false,
+          "depth": 0.0,
+          "groupId": "__main__"
+        }
+      ],
+      "spriteGroups": [
+        {
+          "id": "__main__",
+          "name": "Main",
+          "collapsed": false
+        }
+      ],
+      "groupId": "__main__",
+      "viewportWidth": 800,
+      "viewportHeight": 480,
       "viewportX": 0,
       "viewportY": 0,
       "viewportAdaptation": "letterbox",
       "viewportInitialColor": "green",
       "viewportPreviewColor": "blue",
-      "backgroundColorHex": "#C4D2E3",
+      "backgroundColorHex": "#0000C2",
       "depthSensitivity": 0.08,
-      "zonesFile": "zones/level_000_zones.json",
-      "pathsFile": "paths/level_000_paths.json"
+      "zonesFile": "zones/level_001_zones.json",
+      "pathsFile": "paths/level_001_paths.json"
     }
   ],
   "levelGroups": [
@@ -84,6 +177,15 @@
       "groupId": "__main__"
     },
     {
+      "name": "atlas",
+      "fileName": "media/atlas.png",
+      "mediaType": "atlas",
+      "tileWidth": 32,
+      "tileHeight": 32,
+      "selectionColorHex": "#FFCC00",
+      "groupId": "__main__"
+    },
+    {
       "name": "quixote_walk_sheet_1",
       "fileName": "media/quixote_walk_sheet_1.png",
       "mediaType": "spritesheet",
@@ -93,11 +195,38 @@
       "groupId": "__main__"
     },
     {
-      "name": "atlas",
-      "fileName": "media/atlas.png",
-      "mediaType": "atlas",
+      "name": "quixote_walk_sheet_7",
+      "fileName": "media/quixote_walk_sheet_7.png",
+      "mediaType": "spritesheet",
       "tileWidth": 32,
       "tileHeight": 32,
+      "selectionColorHex": "#FFCC00",
+      "groupId": "__main__"
+    },
+    {
+      "name": "aspa_1",
+      "fileName": "media/aspa_1.png",
+      "mediaType": "spritesheet",
+      "tileWidth": 136,
+      "tileHeight": 138,
+      "selectionColorHex": "#FFCC00",
+      "groupId": "__main__"
+    },
+    {
+      "name": "molino_1_3",
+      "fileName": "media/molino_1_3.png",
+      "mediaType": "spritesheet",
+      "tileWidth": 225,
+      "tileHeight": 366,
+      "selectionColorHex": "#FFCC00",
+      "groupId": "__main__"
+    },
+    {
+      "name": "quixote_1_2",
+      "fileName": "media/quixote_1_2.png",
+      "mediaType": "spritesheet",
+      "tileWidth": 96,
+      "tileHeight": 96,
       "selectionColorHex": "#FFCC00",
       "groupId": "__main__"
     }

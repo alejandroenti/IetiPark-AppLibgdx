@@ -19,14 +19,34 @@
       "anchorX": 0.5,
       "anchorY": 0.5,
       "anchorColor": "red",
-      "hitBoxes": [],
+      "hitBoxes": [
+        {
+          "id": "__hb_1777037359643894_0",
+          "name": "Hit Box 1",
+          "color": "green",
+          "x": 0.03125,
+          "y": 0.03125,
+          "width": 0.9375,
+          "height": 0.90625
+        }
+      ],
       "frameRigs": [
         {
           "frame": 0,
           "anchorX": 0.5,
           "anchorY": 0.5,
           "anchorColor": "red",
-          "hitBoxes": []
+          "hitBoxes": [
+            {
+              "id": "__hb_1777037359643894_0",
+              "name": "Hit Box 1",
+              "color": "green",
+              "x": 0.03125,
+              "y": 0.03125,
+              "width": 0.9375,
+              "height": 0.90625
+            }
+          ]
         }
       ]
     },
@@ -42,17 +62,70 @@
       "anchorX": 0.5,
       "anchorY": 0.5,
       "anchorColor": "red",
-      "hitBoxes": [],
+      "hitBoxes": [
+        {
+          "id": "__hb_1777037348196138_0",
+          "name": "Hit Box 1",
+          "color": "green",
+          "x": 0.03125,
+          "y": 0.03125,
+          "width": 0.9375,
+          "height": 0.90625
+        }
+      ],
       "frameRigs": [
         {
           "frame": 0,
           "anchorX": 0.5,
           "anchorY": 0.5,
           "anchorColor": "red",
-          "hitBoxes": []
+          "hitBoxes": [
+            {
+              "id": "__hb_1777037348196138_0",
+              "name": "Hit Box 1",
+              "color": "green",
+              "x": 0.03125,
+              "y": 0.03125,
+              "width": 0.9375,
+              "height": 0.90625
+            }
+          ]
         },
         {
           "frame": 1,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": [
+            {
+              "id": "__hb_1777037348196138_0",
+              "name": "Hit Box 1",
+              "color": "green",
+              "x": 0.03125,
+              "y": 0.03125,
+              "width": 0.9375,
+              "height": 0.90625
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "anim_1777037668573609",
+      "name": "molino_1",
+      "mediaFile": "media/molino_1_3.png",
+      "startFrame": 0,
+      "endFrame": 0,
+      "fps": 12.0,
+      "loop": true,
+      "groupId": "__main__",
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "anchorColor": "red",
+      "hitBoxes": [],
+      "frameRigs": [
+        {
+          "frame": 0,
           "anchorX": 0.5,
           "anchorY": 0.5,
           "anchorColor": "red",
