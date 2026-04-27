@@ -5,6 +5,12 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class GameObject {
 
+    public enum GameObjectType {
+        PLAYER,
+        INTERACTABLE
+    }
+
+
     private String name;
     private TextureRegion texture;
     private float posX;
@@ -15,8 +21,9 @@ public class GameObject {
     private boolean isJumping;
     private boolean isMovingLeft;
     private boolean isMovingRight;
+    private GameObjectType type;
 
-    public GameObject(String name, TextureRegion texture, float posX, float posY, float dimenX, float dimenY) {
+    public GameObject(String name, TextureRegion texture, float posX, float posY, float dimenX, float dimenY, GameObjectType type) {
         this.name = name;
         this.texture = texture;
         this.posX = posX;
@@ -27,6 +34,7 @@ public class GameObject {
         this.isJumping = false;
         this.isMovingLeft = false;
         this.isMovingRight = false;
+        this.type = type;
     }
 
     public String getName() {
@@ -87,5 +95,9 @@ public class GameObject {
 
     public void rotateTexture(boolean flip) {
         texture.flip(flip, false);
+    }
+
+    public GameObjectType getType() {
+        return type;
     }
 }

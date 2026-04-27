@@ -20,8 +20,8 @@ public class AnimatedGameObject extends GameObject {
     private float elapsedTime;
     private boolean flipX;
 
-    public AnimatedGameObject(String name, TextureRegion texture, float posX, float posY, float dimenX, float dimenY) {
-        super(name, texture, posX, posY, dimenX, dimenY);
+    public AnimatedGameObject(String name, TextureRegion texture, float posX, float posY, float dimenX, float dimenY, GameObjectType type) {
+        super(name, texture, posX, posY, dimenX, dimenY, type);
     }
 
     /**

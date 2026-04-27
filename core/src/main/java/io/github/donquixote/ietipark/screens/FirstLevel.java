@@ -132,7 +132,8 @@ public class FirstLevel implements Screen, IScreen {
                 spriteData.x,
                 spriteY,
                 spriteData.width,
-                spriteData.height
+                spriteData.height,
+                AnimatedGameObject.GameObjectType.INTERACTABLE
             );
 
             // Load all animations into this instance
@@ -167,7 +168,8 @@ public class FirstLevel implements Screen, IScreen {
                 spriteData.x,
                 spriteY,
                 spriteData.width,
-                spriteData.height
+                spriteData.height,
+                AnimatedGameObject.GameObjectType.PLAYER
             );
 
             // Load all animations into this instance
@@ -494,6 +496,7 @@ public class FirstLevel implements Screen, IScreen {
 
     private void handlePlayers(PlayerMessage[] players) {
         ArrayList<String> playerNames = new ArrayList<>();
+        ArrayList<GameObject> gameObjectsToDelete = new ArrayList<>();
 
         for (GameObject go : gameObjects) {
             playerNames.add(go.getName());
@@ -508,16 +511,33 @@ public class FirstLevel implements Screen, IScreen {
                     Gdx.app.error("FirstLevel", "No textures loaded, cannot add player: " + player.name);
                     continue;
                 }
-                Texture defaultTexture = textureCache.values().iterator().next();
+                Texture spriteTexture = textureCache.values().iterator().next();
+                LevelLoader.SpriteData spriteData = levelData.sprites.get(0);
+                float spriteY = this.game.viewport.getWorldHeight() - spriteData.y - spriteData.height;
                 AnimatedGameObject newPlayer = new AnimatedGameObject(
                     player.name,
-                    new TextureRegion(defaultTexture),
-                    0, 80, 96, 96
+                    new TextureRegion(spriteTexture),
+                    spriteData.x,
+                    spriteY,
+                    spriteData.width,
+                    spriteData.height,
+                    AnimatedGameObject.GameObjectType.PLAYER
                 );
                 addAllAnimationsTo(newPlayer);
                 newPlayer.playAnimation("quixote_idle_anim");
                 gameObjects.add(newPlayer);
             }
+        }
+
+        for (int i = 0; i < gameObjects.size(); i++) {
+            if (!game.config.players.contains(gameObjects.get(i).getName()) &&
+                gameObjects.get(i).getType() == AnimatedGameObject.GameObjectType.PLAYER) {
+                gameObjectsToDelete.add(gameObjects.get(i));
+            }
+        }
+
+        for (GameObject go : gameObjectsToDelete) {
+            gameObjects.remove(go);
         }
     }
 

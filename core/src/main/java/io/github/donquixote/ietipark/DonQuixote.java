@@ -41,8 +41,8 @@ public class DonQuixote extends Game {
     }
 
     public void initializeWebSocketServer() {
-        ws = WebSockets.newSocket(WebSockets.toWebSocketUrl("10.0.2.2", 3000));
-        //ws = WebSockets.newSocket("wss://pico1.ieti.site");
+        //ws = WebSockets.newSocket(WebSockets.toWebSocketUrl("10.0.2.2", 3000));
+        ws = WebSockets.newSocket("wss://pico1.ieti.site");
         ws.setSendGracefully(false);
         ws.addListener(new WebSocketClient(this));
         ws.connect();
