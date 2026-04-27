@@ -21,7 +21,7 @@
       "anchorColor": "red",
       "hitBoxes": [
         {
-          "id": "__hb_1777037359643894_0",
+          "id": "__hb_1777110799928675_0",
           "name": "Hit Box 1",
           "color": "green",
           "x": 0.03125,
@@ -38,7 +38,7 @@
           "anchorColor": "red",
           "hitBoxes": [
             {
-              "id": "__hb_1777037359643894_0",
+              "id": "__hb_1777110799928675_0",
               "name": "Hit Box 1",
               "color": "green",
               "x": 0.03125,
@@ -64,7 +64,7 @@
       "anchorColor": "red",
       "hitBoxes": [
         {
-          "id": "__hb_1777037348196138_0",
+          "id": "__hb_1777110805883358_0",
           "name": "Hit Box 1",
           "color": "green",
           "x": 0.03125,
@@ -81,7 +81,7 @@
           "anchorColor": "red",
           "hitBoxes": [
             {
-              "id": "__hb_1777037348196138_0",
+              "id": "__hb_1777110805883358_0",
               "name": "Hit Box 1",
               "color": "green",
               "x": 0.03125,
@@ -98,7 +98,7 @@
           "anchorColor": "red",
           "hitBoxes": [
             {
-              "id": "__hb_1777037348196138_0",
+              "id": "__hb_1777110805883358_0",
               "name": "Hit Box 1",
               "color": "green",
               "x": 0.03125,
@@ -111,9 +111,69 @@
       ]
     },
     {
-      "id": "anim_1777037668573609",
-      "name": "molino_1",
-      "mediaFile": "media/molino_1_3.png",
+      "id": "anim_1777109640731538",
+      "name": "door_closed",
+      "mediaFile": "media/door_open.png",
+      "startFrame": 0,
+      "endFrame": 1,
+      "fps": 12.0,
+      "loop": false,
+      "groupId": "__main__",
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "anchorColor": "red",
+      "hitBoxes": [
+        {
+          "id": "__hb_1777109647095234_0",
+          "name": "Hit Box 1",
+          "color": "green",
+          "x": 0.0,
+          "y": 0.0,
+          "width": 0.90625,
+          "height": 1.0
+        }
+      ],
+      "frameRigs": [
+        {
+          "frame": 0,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": [
+            {
+              "id": "__hb_1777109647095234_0",
+              "name": "Hit Box 1",
+              "color": "green",
+              "x": 0.0,
+              "y": 0.0,
+              "width": 0.90625,
+              "height": 1.0
+            }
+          ]
+        },
+        {
+          "frame": 1,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": [
+            {
+              "id": "__hb_1777109647095234_0",
+              "name": "Hit Box 1",
+              "color": "green",
+              "x": 0.0,
+              "y": 0.0,
+              "width": 0.90625,
+              "height": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "anim_1777126917108904",
+      "name": "key",
+      "mediaFile": "media/key.png",
       "startFrame": 0,
       "endFrame": 0,
       "fps": 12.0,
@@ -126,6 +186,66 @@
       "frameRigs": [
         {
           "frame": 0,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": []
+        }
+      ]
+    },
+    {
+      "id": "anim_1777299796439856",
+      "name": "door_open",
+      "mediaFile": "media/door_open2.png",
+      "startFrame": 0,
+      "endFrame": 1,
+      "fps": 12.0,
+      "loop": false,
+      "groupId": "__main__",
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "anchorColor": "red",
+      "hitBoxes": [],
+      "frameRigs": [
+        {
+          "frame": 0,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": []
+        },
+        {
+          "frame": 1,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": []
+        }
+      ]
+    },
+    {
+      "id": "anim_1777301541187617",
+      "name": "door_animation",
+      "mediaFile": "media/door_anim.png",
+      "startFrame": 0,
+      "endFrame": 1,
+      "fps": 1.0,
+      "loop": false,
+      "groupId": "__main__",
+      "anchorX": 0.5,
+      "anchorY": 0.5,
+      "anchorColor": "red",
+      "hitBoxes": [],
+      "frameRigs": [
+        {
+          "frame": 0,
+          "anchorX": 0.5,
+          "anchorY": 0.5,
+          "anchorColor": "red",
+          "hitBoxes": []
+        },
+        {
+          "frame": 1,
           "anchorX": 0.5,
           "anchorY": 0.5,
           "anchorColor": "red",

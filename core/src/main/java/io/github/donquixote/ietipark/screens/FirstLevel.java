@@ -28,6 +28,14 @@ import io.github.donquixote.ietipark.configuration.PlayerMessage;
 public class FirstLevel implements Screen, IScreen {
     private final DonQuixote game;
 
+    private static class TileLayer {
+        Texture texture;
+        int[][] tileMap;
+        int tileW, tileH;
+        float offsetX, offsetY;
+    }
+
+    private ArrayList<TileLayer> tileLayers;
     private ArrayList<GameObject> gameObjects;
     private Map<String, Texture> textureCache;
     private Map<String, LevelLoader.AnimationData> animations;
@@ -52,7 +60,7 @@ public class FirstLevel implements Screen, IScreen {
         textureCache = new HashMap<>();
 
         // Load level data from JSON
-        levelData = LevelLoader.loadLevel("prova");
+        levelData = LevelLoader.loadLevel("first_level");
         if (levelData == null) {
             Gdx.app.error("FirstLevel", "Failed to load level 'prova'");
             return;
@@ -65,12 +73,39 @@ public class FirstLevel implements Screen, IScreen {
             animationsByName.put(anim.name, anim);
         }
 
+        // Load tile layers
+        tileLayers = new ArrayList<>();
+        if (levelData.layers != null) {
+            for (LevelLoader.LayerData layerData : levelData.layers) {
+                TileLayer tl = new TileLayer();
+                if (textureCache.containsKey(layerData.tilesSheetFile)) {
+                    tl.texture = textureCache.get(layerData.tilesSheetFile);
+                } else {
+                    tl.texture = new Texture(Gdx.files.internal("levels/" + layerData.tilesSheetFile));
+                    textureCache.put(layerData.tilesSheetFile, tl.texture);
+                }
+                tl.tileMap = LevelLoader.loadTileMap(layerData.tileMapFile);
+                tl.tileW = layerData.tilesWidth;
+                tl.tileH = layerData.tilesHeight;
+                tl.offsetX = layerData.x;
+                tl.offsetY = layerData.y;
+                tileLayers.add(tl);
+            }
+        }
+
         // Load sprites from the level data
         if (levelData.sprites != null) {
             for (LevelLoader.SpriteData spriteData : levelData.sprites) {
                 loadSpriteFromData(spriteData);
             }
         }
+
+        // Load player sprites
+        for (String pName : game.config.players) {
+            loadPlayersSprites(levelData.sprites.get(0), pName);
+        }
+
+        removePlayerPlaceholder();
 
         // Set up UI elements
         setupUI();
@@ -90,44 +125,91 @@ public class FirstLevel implements Screen, IScreen {
                 textureCache.put(spriteData.imageFile, spriteTexture);
             }
 
-            for (String playerName : game.config.players) {
-                AnimatedGameObject gameObject = new AnimatedGameObject(
-                    playerName,
-                    new TextureRegion(spriteTexture),
-                    spriteData.x,
-                    spriteData.y,
-                    spriteData.width,
-                    spriteData.height
-                );
+            float spriteY = this.game.viewport.getWorldHeight() - spriteData.y - spriteData.height;
+            AnimatedGameObject gameObject = new AnimatedGameObject(
+                spriteData.name,
+                new TextureRegion(spriteTexture),
+                spriteData.x,
+                spriteY,
+                spriteData.width,
+                spriteData.height
+            );
 
-                // Load all animations into this instance
-                addAllAnimationsTo(gameObject);
+            // Load all animations into this instance
+            addAllAnimationsTo(gameObject);
 
-                // Play the animation assigned to this sprite
-                if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
-                    gameObject.playAnimation(animations.get(spriteData.animationId).name);
-                }
-
-                gameObjects.add(gameObject);
+            // Play the animation assigned to this sprite
+            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+                gameObject.playAnimation(animations.get(spriteData.animationId).name);
             }
+
+            gameObjects.add(gameObject);
         } catch (Exception e) {
             Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
         }
     }
 
+    private void loadPlayersSprites(LevelLoader.SpriteData spriteData, String name) {
+        try {
+            Texture spriteTexture;
+            String texturePath = "levels/" + spriteData.imageFile;
+            if (textureCache.containsKey(spriteData.imageFile)) {
+                spriteTexture = textureCache.get(spriteData.imageFile);
+            } else {
+                spriteTexture = new Texture(Gdx.files.internal(texturePath));
+                textureCache.put(spriteData.imageFile, spriteTexture);
+            }
+
+            float spriteY = this.game.viewport.getWorldHeight() - spriteData.y - spriteData.height;
+            AnimatedGameObject gameObject = new AnimatedGameObject(
+                name,
+                new TextureRegion(spriteTexture),
+                spriteData.x,
+                spriteY,
+                spriteData.width,
+                spriteData.height
+            );
+
+            // Load all animations into this instance
+            addAllAnimationsTo(gameObject);
+
+            // Play the animation assigned to this sprite
+            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+                gameObject.playAnimation(animations.get(spriteData.animationId).name);
+            }
+
+            gameObjects.add(gameObject);
+        } catch (Exception e) {
+            Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
+        }
+    }
+
+    private void removePlayerPlaceholder() {
+
+    }
+
     private void addAllAnimationsTo(AnimatedGameObject obj) {
         for (LevelLoader.AnimationData animData : animationsByName.values()) {
-            Texture animTexture;
-            if (textureCache.containsKey(animData.mediaFile)) {
-                animTexture = textureCache.get(animData.mediaFile);
-            } else {
-                animTexture = new Texture(Gdx.files.internal("levels/" + animData.mediaFile));
-                textureCache.put(animData.mediaFile, animTexture);
+            try {
+                Texture animTexture;
+                if (textureCache.containsKey(animData.mediaFile)) {
+                    animTexture = textureCache.get(animData.mediaFile);
+                } else {
+                    com.badlogic.gdx.files.FileHandle fh = Gdx.files.internal("levels/" + animData.mediaFile);
+                    if (!fh.exists()) {
+                        Gdx.app.error("FirstLevel", "Animation texture not found, skipping: " + animData.mediaFile);
+                        continue;
+                    }
+                    animTexture = new Texture(fh);
+                    textureCache.put(animData.mediaFile, animTexture);
+                }
+                int fw = animData.frameWidth  > 0 ? animData.frameWidth  : (int) obj.getDimenX();
+                int fhv = animData.frameHeight > 0 ? animData.frameHeight : (int) obj.getDimenY();
+                obj.addAnimation(animData.name, animTexture, fw, fhv,
+                    animData.startFrame, animData.endFrame, animData.fps, animData.loop);
+            } catch (Exception e) {
+                Gdx.app.error("FirstLevel", "Failed to load animation: " + animData.name, e);
             }
-            int fw = animData.frameWidth  > 0 ? animData.frameWidth  : (int) obj.getDimenX();
-            int fh = animData.frameHeight > 0 ? animData.frameHeight : (int) obj.getDimenY();
-            obj.addAnimation(animData.name, animTexture, fw, fh,
-                animData.startFrame, animData.endFrame, animData.fps, animData.loop);
         }
     }
 
@@ -313,6 +395,26 @@ public class FirstLevel implements Screen, IScreen {
 
         this.game.batch.begin();
 
+        // Draw tile layers
+        for (TileLayer tl : tileLayers) {
+            if (tl.tileMap == null || tl.texture == null) continue;
+            int atlasColumns = tl.texture.getWidth() / tl.tileW;
+            int rows = tl.tileMap.length;
+            for (int r = 0; r < rows; r++) {
+                int[] row = tl.tileMap[r];
+                for (int c = 0; c < row.length; c++) {
+                    int tileIdx = row[c];
+                    if (tileIdx < 0) continue;
+                    int tileCol = tileIdx % atlasColumns;
+                    int tileRow = tileIdx / atlasColumns;
+                    float drawX = tl.offsetX + c * tl.tileW;
+                    float drawY = tl.offsetY + (rows - 1 - r) * tl.tileH;
+                    this.game.batch.draw(tl.texture, drawX, drawY, tl.tileW, tl.tileH,
+                        tileCol * tl.tileW, tileRow * tl.tileH, tl.tileW, tl.tileH, false, false);
+                }
+            }
+        }
+
         // Draw background if available
         if (backgroundTexture != null) {
             this.game.batch.draw(backgroundTexture, 0, 0, this.game.viewport.getWorldWidth(), this.game.viewport.getWorldHeight());
@@ -353,8 +455,8 @@ public class FirstLevel implements Screen, IScreen {
                             if (go.getLastPosX() == gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_idle")) {
                                 changeAnimation(go.getName(), "quixote_idle");
                             }
-                            else if (go.getLastPosX() != gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_walk")) {
-                                changeAnimation(go.getName(), "quixote_walk");
+                            else if (go.getLastPosX() != gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_walk_sheet_1")) {
+                                changeAnimation(go.getName(), "quixote_walk_sheet_1");
                             }
                     }
 
@@ -405,7 +507,7 @@ public class FirstLevel implements Screen, IScreen {
                     0, 80, 96, 96
                 );
                 addAllAnimationsTo(newPlayer);
-                newPlayer.playAnimation("quixote_idle_anim");
+                newPlayer.playAnimation("quixote_idle");
                 gameObjects.add(newPlayer);
             }
         }

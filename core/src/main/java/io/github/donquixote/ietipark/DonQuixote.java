@@ -24,7 +24,7 @@ public class DonQuixote extends Game {
     public void create() {
         batch = new SpriteBatch();
         skin = new Skin(Gdx.files.internal("skin/golden-ui-skin.json"));
-        viewport = new FitViewport(800, 480);
+        viewport = new FitViewport(1024, 512);
 
         this.setScreen(new MainMenu(this));
     }
@@ -41,8 +41,8 @@ public class DonQuixote extends Game {
     }
 
     public void initializeWebSocketServer() {
-        //ws = WebSockets.newSocket(WebSockets.toWebSocketUrl("10.0.2.2", 3000));
-        ws = WebSockets.newSocket("wss://pico1.ieti.site");
+        ws = WebSockets.newSocket(WebSockets.toWebSocketUrl("10.0.2.2", 3000));
+        //ws = WebSockets.newSocket("wss://pico1.ieti.site");
         ws.setSendGracefully(false);
         ws.addListener(new WebSocketClient(this));
         ws.connect();

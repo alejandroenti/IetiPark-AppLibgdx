@@ -22,6 +22,16 @@ public class LevelLoader {
         public int frameHeight;
     }
 
+    public static class LayerData {
+        public String name;
+        public String tilesSheetFile;
+        public int tilesWidth;
+        public int tilesHeight;
+        public String tileMapFile;
+        public float x;
+        public float y;
+    }
+
     public static class SpriteData {
         public String name;
         public String type;
@@ -38,6 +48,7 @@ public class LevelLoader {
     public static class LevelData {
         public String name;
         public String description;
+        public ArrayList<LayerData> layers;
         public ArrayList<SpriteData> sprites;
         public int viewportWidth;
         public int viewportHeight;
@@ -107,6 +118,22 @@ public class LevelLoader {
                         levelData.viewportHeight = level.getInt("viewportHeight", 1080);
                         levelData.backgroundColorHex = level.getString("backgroundColorHex", "#000000");
                         
+                        levelData.layers = new ArrayList<>();
+                        JsonValue layers = level.get("layers");
+                        if (layers != null) {
+                            for (JsonValue layer : layers) {
+                                LayerData layerData = new LayerData();
+                                layerData.name = layer.getString("name", "");
+                                layerData.tilesSheetFile = layer.getString("tilesSheetFile", "");
+                                layerData.tilesWidth = layer.getInt("tilesWidth", 32);
+                                layerData.tilesHeight = layer.getInt("tilesHeight", 32);
+                                layerData.tileMapFile = layer.getString("tileMapFile", "");
+                                layerData.x = layer.getFloat("x", 0);
+                                layerData.y = layer.getFloat("y", 0);
+                                levelData.layers.add(layerData);
+                            }
+                        }
+
                         levelData.sprites = new ArrayList<>();
                         JsonValue sprites = level.get("sprites");
                         if (sprites != null) {
@@ -133,5 +160,28 @@ public class LevelLoader {
             Gdx.app.error("LevelLoader", "Failed to load level: " + levelName, e);
         }
         return levelData;
+    }
+
+    public static int[][] loadTileMap(String tileMapFile) {
+        try {
+            JsonValue root = reader.parse(Gdx.files.internal("levels/" + tileMapFile));
+            JsonValue tileMapJson = root.get("tileMap");
+            if (tileMapJson == null) return null;
+            int rows = tileMapJson.size;
+            int[][] tileMap = new int[rows][];
+            int r = 0;
+            for (JsonValue row : tileMapJson) {
+                int cols = row.size;
+                tileMap[r] = new int[cols];
+                for (int c = 0; c < cols; c++) {
+                    tileMap[r][c] = row.getInt(c);
+                }
+                r++;
+            }
+            return tileMap;
+        } catch (Exception e) {
+            Gdx.app.error("LevelLoader", "Failed to load tile map: " + tileMapFile, e);
+            return null;
+        }
     }
 }
