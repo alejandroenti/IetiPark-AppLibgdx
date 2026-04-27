@@ -90,24 +90,26 @@ public class FirstLevel implements Screen, IScreen {
                 textureCache.put(spriteData.imageFile, spriteTexture);
             }
 
-            AnimatedGameObject gameObject = new AnimatedGameObject(
-                spriteData.name,
-                new TextureRegion(spriteTexture),
-                spriteData.x,
-                spriteData.y,
-                spriteData.width,
-                spriteData.height
-            );
+            for (String playerName : game.config.players) {
+                AnimatedGameObject gameObject = new AnimatedGameObject(
+                    playerName,
+                    new TextureRegion(spriteTexture),
+                    spriteData.x,
+                    spriteData.y,
+                    spriteData.width,
+                    spriteData.height
+                );
 
-            // Load all animations into this instance
-            addAllAnimationsTo(gameObject);
+                // Load all animations into this instance
+                addAllAnimationsTo(gameObject);
 
-            // Play the animation assigned to this sprite
-            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
-                gameObject.playAnimation(animations.get(spriteData.animationId).name);
+                // Play the animation assigned to this sprite
+                if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+                    gameObject.playAnimation(animations.get(spriteData.animationId).name);
+                }
+
+                gameObjects.add(gameObject);
             }
-
-            gameObjects.add(gameObject);
         } catch (Exception e) {
             Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
         }
@@ -241,18 +243,21 @@ public class FirstLevel implements Screen, IScreen {
 
     @Override
     public void handleMessage(String message) {
-        MessageParser.ParsedMessage parsed = MessageParser.parse(message);
+        Gdx.app.postRunnable(() -> {
+            MessageParser.ParsedMessage parsed = MessageParser.parse(message);
+            if (parsed.type == null) return;
 
-        switch (parsed.type) {
-            case "GAME STATE":
-                handleGameState(MessageParser.parseGameObjects(parsed.payload));
-                break;
-            case "PLAYERS":
-                handlePlayers(MessageParser.parsePlayers(parsed.payload));
-                break;
-            default:
-                break;
-        }
+            switch (parsed.type) {
+                case "GAME STATE":
+                    handleGameState(MessageParser.parseGameObjects(parsed.payload));
+                    break;
+                case "PLAYERS":
+                    handlePlayers(MessageParser.parsePlayers(parsed.payload));
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
     private Texture createCircleTexture(int diameter, Color color) {
@@ -271,28 +276,22 @@ public class FirstLevel implements Screen, IScreen {
         if (knobX > 0.2f) {
             if (dir != 1) {
                 dir = 1;
-                setFlipX("qweqweqwe", false);
-                changeAnimation("qweqweqwe", "quixote_walk");
                 game.ws.send("{\"type\": \"MOVE\", \"payload\": \"RIGHT\"}");
             }
         } else if (knobX < -0.2f) {
             if (dir != -1) {
                 dir = -1;
-                setFlipX("qweqweqwe", true);
-                changeAnimation("qweqweqwe", "quixote_walk");
                 game.ws.send("{\"type\": \"MOVE\", \"payload\": \"LEFT\"}");
             }
         } else {
             if (dir != 0) {
                 dir = 0;
-                changeAnimation("qweqweqwe", "quixote_idle_anim");
                 game.ws.send("{\"type\": \"MOVE\", \"payload\": \"NONE\"}");
             }
         }
 
         if (jumpPressed) {
             jumpPressed = false;
-            changeAnimation("qweqweqwe", "quixote_walk_sheet_7");
             game.ws.send("{\"type\": \"JUMP\", \"payload\": null}");
         }
     }
@@ -336,10 +335,39 @@ public class FirstLevel implements Screen, IScreen {
 
     private void handleGameState(GameObjectMessage[] gameObjectsMsg) {
         for (GameObjectMessage gom : gameObjectsMsg) {
+            if (gom.name == null) continue;
             for (GameObject go : gameObjects) {
                 if (gom.name.equals(go.getName())) {
                     go.setPosX(gom.posX);
-                    go.setPosY(gom.posY);
+                    go.setPosY(game.viewport.getWorldHeight() - gom.posY - go.getDimenY());
+
+                    if (!go.getIsJumping() && gom.isJumping) {
+                        go.setIsJumping(true);
+                        changeAnimation(go.getName(), "quixote_walk_sheet_7");
+                    }
+                    else if (go.getIsJumping() && !gom.isJumping) {
+                        go.setIsJumping(true);
+                        changeAnimation(go.getName(), "quixote_idle_anim");
+                    }
+                    else {
+                            if (go.getLastPosX() == gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_idle")) {
+                                changeAnimation(go.getName(), "quixote_idle");
+                            }
+                            else if (go.getLastPosX() != gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_walk")) {
+                                changeAnimation(go.getName(), "quixote_walk");
+                            }
+                    }
+
+                    if (!go.getIsMovingLeft() && gom.isMovingLeft) {
+                        go.setIsMovingLeft(true);
+                        go.setIsMovingRight(false);
+                        setFlipX(go.getName(), true);
+                    }
+                    else if (!go.getIsMovingRight() && gom.isMovingRight) {
+                        go.setIsMovingLeft(false);
+                        go.setIsMovingRight(true);
+                        setFlipX(go.getName(), false);
+                    }
                 }
             }
         }
