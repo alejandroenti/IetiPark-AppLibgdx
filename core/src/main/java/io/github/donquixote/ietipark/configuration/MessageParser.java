@@ -49,6 +49,17 @@ public class MessageParser {
         return gameObjects;
     }
 
+    public static LevelStateMessage parseLevelState(JsonValue payload) {
+        if (payload == null || payload.isNull()) return null;
+        JsonValue cl = payload.get("currentLevel");
+        if (cl == null || cl.isNull()) return null;
+        LevelStateMessage ls = new LevelStateMessage();
+        ls.name       = cl.getString("name", null);
+        ls.isDoorOpen = cl.getBoolean("isDoorOpen", false);
+        ls.isKeyTaken = cl.getBoolean("isKeyTaken", false);
+        return ls;
+    }
+
     public static class ParsedMessage {
         public String    type;
         public JsonValue payload;

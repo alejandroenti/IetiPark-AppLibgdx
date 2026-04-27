@@ -23,6 +23,7 @@ import io.github.donquixote.ietipark.configuration.AnimatedGameObject;
 import io.github.donquixote.ietipark.configuration.GameObject;
 import io.github.donquixote.ietipark.configuration.GameObjectMessage;
 import io.github.donquixote.ietipark.configuration.LevelLoader;
+import io.github.donquixote.ietipark.configuration.LevelStateMessage;
 import io.github.donquixote.ietipark.configuration.MessageParser;
 import io.github.donquixote.ietipark.configuration.PlayerMessage;
 
@@ -344,6 +345,7 @@ public class FirstLevel implements Screen, IScreen {
             switch (parsed.type) {
                 case "GAME STATE":
                     handleGameState(MessageParser.parseGameObjects(parsed.payload));
+                    handleLevelState(MessageParser.parseLevelState(parsed.payload));
                     break;
                 case "PLAYERS":
                     handlePlayers(MessageParser.parsePlayers(parsed.payload));
@@ -568,6 +570,13 @@ public class FirstLevel implements Screen, IScreen {
 
         for (GameObject go : gameObjectsToDelete) {
             gameObjects.remove(go);
+        }
+    }
+
+    private void handleLevelState(LevelStateMessage levelState) {
+        if (levelState == null) return;
+        if (levelState.isDoorOpen) {
+            changeAnimation("door", "door_closed");
         }
     }
 
