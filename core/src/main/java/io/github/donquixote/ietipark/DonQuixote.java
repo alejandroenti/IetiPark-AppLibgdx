@@ -2,6 +2,7 @@ package io.github.donquixote.ietipark;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -15,6 +16,7 @@ import io.github.donquixote.ietipark.screens.MainMenu;
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class DonQuixote extends Game {
     public SpriteBatch batch;
+    public BitmapFont font;
     public FitViewport viewport;
     public Skin skin;
     public WebSocket ws;
@@ -24,6 +26,8 @@ public class DonQuixote extends Game {
     public void create() {
         batch = new SpriteBatch();
         skin = new Skin(Gdx.files.internal("skin/golden-ui-skin.json"));
+        font = skin.getFont("font");
+        font.getData().setScale(0.75f);
         viewport = new FitViewport(1024, 512);
 
         this.setScreen(new MainMenu(this));

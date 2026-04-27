@@ -9,6 +9,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
@@ -43,6 +44,7 @@ public class FirstLevel implements Screen, IScreen {
     private LevelLoader.LevelData levelData;
 
     private Texture backgroundTexture;
+    private GlyphLayout glyphLayout;
     private Texture touchpadBgTexture;
     private Texture touchpadKnobTexture;
     private Texture jumpBtnTexture;
@@ -109,6 +111,9 @@ public class FirstLevel implements Screen, IScreen {
 
         // Set up UI elements
         setupUI();
+
+        // GlyphLayout for player name labels
+        glyphLayout = new GlyphLayout();
 
         dir = 0;
         jumpPressed = false;
@@ -439,6 +444,18 @@ public class FirstLevel implements Screen, IScreen {
                     -go.getDimenX(), go.getDimenY());
             } else {
                 this.game.batch.draw(tex, drawX, drawY, go.getDimenX(), go.getDimenY());
+            }
+        }
+
+        // Draw player name labels above each PLAYER object
+        for (GameObject go : gameObjects) {
+            if (go.getType() == AnimatedGameObject.GameObjectType.PLAYER) {
+                float drawX = go.getPosX() + go.getDimenX() / 2f;
+                float drawY = go.getPosY() + go.getDimenY() / 2f;
+                glyphLayout.setText(game.font, go.getName());
+                float nameX = drawX + go.getDimenX() / 2f - glyphLayout.width / 2f;
+                float nameY = drawY + go.getDimenY() + glyphLayout.height + 4f;
+                game.font.draw(this.game.batch, glyphLayout, nameX, nameY);
             }
         }
 
