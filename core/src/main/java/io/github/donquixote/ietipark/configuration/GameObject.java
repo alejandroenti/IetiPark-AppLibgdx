@@ -21,6 +21,7 @@ public class GameObject {
     private boolean isJumping;
     private boolean isMovingLeft;
     private boolean isMovingRight;
+    private boolean hasKey;
     private GameObjectType type;
 
     public GameObject(String name, TextureRegion texture, float posX, float posY, float dimenX, float dimenY, GameObjectType type) {
@@ -91,6 +92,13 @@ public class GameObject {
     }
     public boolean getIsMovingLeft() {
         return isMovingLeft;
+    }
+
+    public void setHasKey(boolean hasKey) {
+        this.hasKey = hasKey;
+    }
+    public boolean getHasKey() {
+        return hasKey;
     }
 
     public void rotateTexture(boolean flip) {

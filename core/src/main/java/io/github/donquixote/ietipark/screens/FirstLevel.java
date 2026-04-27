@@ -456,6 +456,18 @@ public class FirstLevel implements Screen, IScreen {
                 float nameX = drawX + go.getDimenX() / 2f - glyphLayout.width / 2f;
                 float nameY = drawY + go.getDimenY() + glyphLayout.height + 4f;
                 game.font.draw(this.game.batch, glyphLayout, nameX, nameY);
+
+                // Draw key icon above name if player has the key
+                if (go.getHasKey()) {
+                    for (GameObject keyObj : gameObjects) {
+                        if (keyObj.getName().equals("key") &&
+                            keyObj.getType() == AnimatedGameObject.GameObjectType.INTERACTABLE) {
+                            keyObj.setPosX(drawX + go.getDimenX() / 2f - keyObj.getDimenX());
+                            keyObj.setPosY(nameY + 4f);
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -469,6 +481,7 @@ public class FirstLevel implements Screen, IScreen {
                 if (gom.name.equals(go.getName())) {
                     go.setPosX(gom.posX);
                     go.setPosY(game.viewport.getWorldHeight() - gom.posY - go.getDimenY());
+                    go.setHasKey(gom.hasKey);
 
                     // Animation priority: jump > walk > idle
                     if (gom.isJumping) {
