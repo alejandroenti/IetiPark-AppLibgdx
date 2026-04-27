@@ -451,29 +451,29 @@ public class FirstLevel implements Screen, IScreen {
                     go.setPosX(gom.posX);
                     go.setPosY(game.viewport.getWorldHeight() - gom.posY - go.getDimenY());
 
-                    if (!go.getIsJumping() && gom.isJumping) {
-                        go.setIsJumping(true);
-                        changeAnimation(go.getName(), "quixote_walk_sheet_7");
-                    }
-                    else if (go.getIsJumping() && !gom.isJumping) {
-                        go.setIsJumping(true);
-                        changeAnimation(go.getName(), "quixote_idle_anim");
-                    }
-                    else {
-                            if (go.getLastPosX() == gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_idle")) {
-                                changeAnimation(go.getName(), "quixote_idle");
-                            }
-                            else if (go.getLastPosX() != gom.posX && !((AnimatedGameObject) go).getCurrentAnimationName().equals("quixote_walk_sheet_1")) {
-                                changeAnimation(go.getName(), "quixote_walk_sheet_1");
-                            }
+                    // Animation priority: jump > walk > idle
+                    if (gom.isJumping) {
+                        if (!go.getIsJumping()) {
+                            go.setIsJumping(true);
+                            changeAnimation(go.getName(), "quixote_walk_sheet_7");
+                        }
+                    } else {
+                        if (go.getIsJumping()) {
+                            go.setIsJumping(false);
+                        }
+                        if (gom.isMovingLeft || gom.isMovingRight) {
+                            changeAnimation(go.getName(), "quixote_walk");
+                        } else {
+                            changeAnimation(go.getName(), "quixote_idle_anim");
+                        }
                     }
 
-                    if (!go.getIsMovingLeft() && gom.isMovingLeft) {
+                    // Flip texture based on movement direction
+                    if (gom.isMovingLeft) {
                         go.setIsMovingLeft(true);
                         go.setIsMovingRight(false);
                         setFlipX(go.getName(), true);
-                    }
-                    else if (!go.getIsMovingRight() && gom.isMovingRight) {
+                    } else if (gom.isMovingRight) {
                         go.setIsMovingLeft(false);
                         go.setIsMovingRight(true);
                         setFlipX(go.getName(), false);
@@ -515,7 +515,7 @@ public class FirstLevel implements Screen, IScreen {
                     0, 80, 96, 96
                 );
                 addAllAnimationsTo(newPlayer);
-                newPlayer.playAnimation("quixote_idle");
+                newPlayer.playAnimation("quixote_idle_anim");
                 gameObjects.add(newPlayer);
             }
         }
