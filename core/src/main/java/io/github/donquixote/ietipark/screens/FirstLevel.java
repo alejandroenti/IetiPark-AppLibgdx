@@ -426,14 +426,17 @@ public class FirstLevel implements Screen, IScreen {
         }
 
         // Draw all game objects
+        // posX/posY is the anchor (center), so offset by half dimensions to get bottom-left
         for (GameObject go : gameObjects) {
             TextureRegion tex = go.getTexture();
+            float drawX = go.getPosX() + go.getDimenX() / 2f;
+            float drawY = go.getPosY() + go.getDimenY() / 2f;
             if (go instanceof AnimatedGameObject && ((AnimatedGameObject) go).isFlipX()) {
                 this.game.batch.draw(tex,
-                    go.getPosX() + go.getDimenX(), go.getPosY(),
+                    drawX + go.getDimenX(), drawY,
                     -go.getDimenX(), go.getDimenY());
             } else {
-                this.game.batch.draw(tex, go.getPosX(), go.getPosY(), go.getDimenX(), go.getDimenY());
+                this.game.batch.draw(tex, drawX, drawY, go.getDimenX(), go.getDimenY());
             }
         }
 
