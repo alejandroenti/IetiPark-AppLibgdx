@@ -185,7 +185,12 @@ public class FirstLevel implements Screen, IScreen {
     }
 
     private void removePlayerPlaceholder() {
-
+        for (int i = 0; i < gameObjects.size(); i++) {
+            if (gameObjects.get(i).getName().equals("quixote")) {
+                gameObjects.remove(i);
+                return;
+            }
+        }
     }
 
     private void addAllAnimationsTo(AnimatedGameObject obj) {
