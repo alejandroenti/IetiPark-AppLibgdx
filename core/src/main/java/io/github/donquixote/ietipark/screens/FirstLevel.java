@@ -1,12 +1,15 @@
 package io.github.donquixote.ietipark.screens;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
@@ -16,30 +19,36 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import io.github.donquixote.ietipark.DonQuixote;
+import io.github.donquixote.ietipark.configuration.AnimatedGameObject;
 import io.github.donquixote.ietipark.configuration.GameObject;
 import io.github.donquixote.ietipark.configuration.GameObjectMessage;
+import io.github.donquixote.ietipark.configuration.LevelLoader;
+import io.github.donquixote.ietipark.configuration.LevelStateMessage;
 import io.github.donquixote.ietipark.configuration.MessageParser;
 import io.github.donquixote.ietipark.configuration.PlayerMessage;
 
 public class FirstLevel implements Screen, IScreen {
     private final DonQuixote game;
 
+    private static class TileLayer {
+        Texture texture;
+        int[][] tileMap;
+        int tileW, tileH;
+        float offsetX, offsetY;
+    }
+
+    private ArrayList<TileLayer> tileLayers;
     private ArrayList<GameObject> gameObjects;
+    private Map<String, Texture> textureCache;
+    private Map<String, LevelLoader.AnimationData> animations;
+    private Map<String, LevelLoader.AnimationData> animationsByName;
+    private LevelLoader.LevelData levelData;
 
     private Texture backgroundTexture;
-    private Texture characterTexture;
-    private Texture keyTexture;
-    private Texture doorTexture;
+    private GlyphLayout glyphLayout;
     private Texture touchpadBgTexture;
     private Texture touchpadKnobTexture;
     private Texture jumpBtnTexture;
-
-    TextureRegion[][] characterRegion;
-    TextureRegion[][] keyRegion;
-    TextureRegion[][] doorRegion;
-    TextureRegion characterFrame;
-    TextureRegion keyFrame;
-    TextureRegion doorFrame;
 
     private Stage uiStage;
     private Touchpad touchpad;
@@ -51,31 +60,183 @@ public class FirstLevel implements Screen, IScreen {
     public FirstLevel(DonQuixote game) {
         this.game = game;
         gameObjects = new ArrayList<>();
+        textureCache = new HashMap<>();
 
-        backgroundTexture = new Texture(Gdx.files.internal("mvp/background.png"));
-        characterTexture = new Texture(Gdx.files.internal("mvp/quixote_1.png"));
-        keyTexture = new Texture(Gdx.files.internal("mvp/key.png"));
-        doorTexture = new Texture(Gdx.files.internal("mvp/door.png"));
-
-        characterRegion = TextureRegion.split(characterTexture, characterTexture.getWidth(), characterTexture.getHeight());
-        keyRegion = TextureRegion.split(keyTexture, keyTexture.getWidth(), keyTexture.getHeight());
-        doorRegion = TextureRegion.split(doorTexture, doorTexture.getWidth(), doorTexture.getHeight());
-
-        characterFrame = characterRegion[0][0];
-        keyFrame = keyRegion[0][0];
-        doorFrame = doorRegion[0][0];
-
-        for (String name : this.game.config.players) {
-            gameObjects.add(new GameObject(name, characterFrame, 0, 80, 96, 96));
+        // Load level data from JSON
+        levelData = LevelLoader.loadLevel("first_level");
+        if (levelData == null) {
+            Gdx.app.error("FirstLevel", "Failed to load level 'prova'");
+            return;
         }
-        gameObjects.add(new GameObject("key", keyFrame, 100, 100, 64, 64));
-        gameObjects.add(new GameObject("door", doorFrame, 736, 0, 96, this.game.viewport.getWorldHeight()));
 
-        float density = Gdx.graphics.getDensity();
-        int bgSize = (int) (36 * density);
-        int knobSize = (int) (24 * density);
-        int padSize = (int) (36 * density);
-        int padMargin = (int) (2 * density);
+        // Load animations from JSON
+        animations = LevelLoader.loadAnimations();
+        animationsByName = new HashMap<>();
+        for (LevelLoader.AnimationData anim : animations.values()) {
+            animationsByName.put(anim.name, anim);
+        }
+
+        // Load tile layers
+        tileLayers = new ArrayList<>();
+        if (levelData.layers != null) {
+            for (LevelLoader.LayerData layerData : levelData.layers) {
+                TileLayer tl = new TileLayer();
+                if (textureCache.containsKey(layerData.tilesSheetFile)) {
+                    tl.texture = textureCache.get(layerData.tilesSheetFile);
+                } else {
+                    tl.texture = new Texture(Gdx.files.internal("levels/" + layerData.tilesSheetFile));
+                    textureCache.put(layerData.tilesSheetFile, tl.texture);
+                }
+                tl.tileMap = LevelLoader.loadTileMap(layerData.tileMapFile);
+                tl.tileW = layerData.tilesWidth;
+                tl.tileH = layerData.tilesHeight;
+                tl.offsetX = layerData.x;
+                tl.offsetY = layerData.y;
+                tileLayers.add(tl);
+            }
+        }
+
+        // Load sprites from the level data
+        if (levelData.sprites != null) {
+            for (LevelLoader.SpriteData spriteData : levelData.sprites) {
+                loadSpriteFromData(spriteData);
+            }
+        }
+
+        // Load player sprites
+        for (String pName : game.config.players) {
+            loadPlayersSprites(levelData.sprites.get(0), pName);
+        }
+
+        removePlayerPlaceholder();
+
+        // Set up UI elements
+        setupUI();
+
+        // GlyphLayout for player name labels
+        glyphLayout = new GlyphLayout();
+
+        dir = 0;
+        jumpPressed = false;
+    }
+
+    private void loadSpriteFromData(LevelLoader.SpriteData spriteData) {
+        try {
+            Texture spriteTexture;
+            String texturePath = "levels/" + spriteData.imageFile;
+            if (textureCache.containsKey(spriteData.imageFile)) {
+                spriteTexture = textureCache.get(spriteData.imageFile);
+            } else {
+                spriteTexture = new Texture(Gdx.files.internal(texturePath));
+                textureCache.put(spriteData.imageFile, spriteTexture);
+            }
+
+            float spriteY = this.game.viewport.getWorldHeight() - spriteData.y - spriteData.height;
+            AnimatedGameObject gameObject = new AnimatedGameObject(
+                spriteData.name,
+                new TextureRegion(spriteTexture),
+                spriteData.x,
+                spriteY,
+                spriteData.width,
+                spriteData.height,
+                AnimatedGameObject.GameObjectType.INTERACTABLE
+            );
+
+            // Load all animations into this instance
+            addAllAnimationsTo(gameObject);
+
+            // Play the animation assigned to this sprite
+            if (gameObject.getName().equals("door")) {
+                gameObject.playAnimation("door_animation");
+                gameObject.setFrame(0);
+            } else if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+                gameObject.playAnimation(animations.get(spriteData.animationId).name);
+            }
+
+            gameObjects.add(gameObject);
+        } catch (Exception e) {
+            Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
+        }
+    }
+
+    private void loadPlayersSprites(LevelLoader.SpriteData spriteData, String name) {
+        try {
+            Texture spriteTexture;
+            String texturePath = "levels/" + spriteData.imageFile;
+            if (textureCache.containsKey(spriteData.imageFile)) {
+                spriteTexture = textureCache.get(spriteData.imageFile);
+            } else {
+                spriteTexture = new Texture(Gdx.files.internal(texturePath));
+                textureCache.put(spriteData.imageFile, spriteTexture);
+            }
+
+            float spriteY = this.game.viewport.getWorldHeight() - spriteData.y - spriteData.height;
+            AnimatedGameObject gameObject = new AnimatedGameObject(
+                name,
+                new TextureRegion(spriteTexture),
+                spriteData.x,
+                spriteY,
+                spriteData.width,
+                spriteData.height,
+                AnimatedGameObject.GameObjectType.PLAYER
+            );
+
+            // Load all animations into this instance
+            addAllAnimationsTo(gameObject);
+
+            // Play the animation assigned to this sprite
+            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+                gameObject.playAnimation(animations.get(spriteData.animationId).name);
+            }
+
+            gameObjects.add(gameObject);
+        } catch (Exception e) {
+            Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
+        }
+    }
+
+    private void removePlayerPlaceholder() {
+        for (int i = 0; i < gameObjects.size(); i++) {
+            if (gameObjects.get(i).getName().equals("quixote")) {
+                gameObjects.remove(i);
+                return;
+            }
+        }
+    }
+
+    private void addAllAnimationsTo(AnimatedGameObject obj) {
+        for (LevelLoader.AnimationData animData : animationsByName.values()) {
+            try {
+                Texture animTexture;
+                if (textureCache.containsKey(animData.mediaFile)) {
+                    animTexture = textureCache.get(animData.mediaFile);
+                } else {
+                    com.badlogic.gdx.files.FileHandle fh = Gdx.files.internal("levels/" + animData.mediaFile);
+                    if (!fh.exists()) {
+                        Gdx.app.error("FirstLevel", "Animation texture not found, skipping: " + animData.mediaFile);
+                        continue;
+                    }
+                    animTexture = new Texture(fh);
+                    textureCache.put(animData.mediaFile, animTexture);
+                }
+                int fw = animData.frameWidth  > 0 ? animData.frameWidth  : (int) obj.getDimenX();
+                int fhv = animData.frameHeight > 0 ? animData.frameHeight : (int) obj.getDimenY();
+                obj.addAnimation(animData.name, animTexture, fw, fhv,
+                    animData.startFrame, animData.endFrame, animData.fps, animData.loop);
+            } catch (Exception e) {
+                Gdx.app.error("FirstLevel", "Failed to load animation: " + animData.name, e);
+            }
+        }
+    }
+
+    private void setupUI() {
+        float worldHeight = this.game.viewport.getWorldHeight();
+        float worldWidth  = this.game.viewport.getWorldWidth();
+
+        int bgSize    = (int) (worldHeight * 0.14f);
+        int knobSize  = (int) (worldHeight * 0.08f);
+        int padSize   = (int) (worldHeight * 0.14f);
+        int padMargin = (int) (worldHeight * 0.02f);
 
         touchpadBgTexture = createCircleTexture(bgSize, new Color(0.3f, 0.3f, 0.3f, 0.5f));
         touchpadKnobTexture = createCircleTexture(knobSize, new Color(0.7f, 0.7f, 0.7f, 0.8f));
@@ -89,7 +250,7 @@ public class FirstLevel implements Screen, IScreen {
         touchpadStyle.background = touchpadBg;
         touchpadStyle.knob = touchpadKnob;
 
-        touchpad = new Touchpad(5 * density, touchpadStyle);
+        touchpad = new Touchpad(padSize * 0.05f, touchpadStyle);
         touchpad.setBounds(padMargin, padMargin, padSize, padSize);
 
         ImageButton.ImageButtonStyle jumpStyle = new ImageButton.ImageButtonStyle();
@@ -97,7 +258,7 @@ public class FirstLevel implements Screen, IScreen {
         jumpButton = new ImageButton(jumpStyle);
         int jumpBtnSize = (int) (knobSize * 1.5f);
         jumpButton.setBounds(
-            this.game.viewport.getWorldWidth() - padMargin - jumpBtnSize,
+            worldWidth - padMargin - jumpBtnSize,
             padMargin,
             jumpBtnSize,
             jumpBtnSize
@@ -113,9 +274,6 @@ public class FirstLevel implements Screen, IScreen {
         uiStage.addActor(touchpad);
         uiStage.addActor(jumpButton);
         Gdx.input.setInputProcessor(uiStage);
-
-        dir = 0;
-        jumpPressed = false;
     }
 
     @Override
@@ -126,10 +284,19 @@ public class FirstLevel implements Screen, IScreen {
     @Override
     public void render(float delta) {
         input();
+        updateAnimations(delta);
         draw();
         if (uiStage != null) {
             uiStage.act(Gdx.graphics.getDeltaTime());
             uiStage.draw();
+        }
+    }
+
+    private void updateAnimations(float delta) {
+        for (GameObject go : gameObjects) {
+            if (go instanceof AnimatedGameObject) {
+                ((AnimatedGameObject) go).update(delta);
+            }
         }
     }
 
@@ -152,33 +319,44 @@ public class FirstLevel implements Screen, IScreen {
 
     @Override
     public void dispose() {
-        backgroundTexture.dispose();
-        characterTexture.dispose();
-        keyTexture.dispose();
-        doorTexture.dispose();
+        // Dispose all cached textures
+        if (textureCache != null) {
+            for (Texture texture : textureCache.values()) {
+                texture.dispose();
+            }
+            textureCache.clear();
+        }
+
+        if (backgroundTexture != null) {
+            backgroundTexture.dispose();
+        }
 
         if (uiStage != null) {
             uiStage.dispose();
-            touchpadBgTexture.dispose();
-            touchpadKnobTexture.dispose();
-            jumpBtnTexture.dispose();
+            if (touchpadBgTexture != null) touchpadBgTexture.dispose();
+            if (touchpadKnobTexture != null) touchpadKnobTexture.dispose();
+            if (jumpBtnTexture != null) jumpBtnTexture.dispose();
         }
     }
 
     @Override
     public void handleMessage(String message) {
-        MessageParser.ParsedMessage parsed = MessageParser.parse(message);
+        Gdx.app.postRunnable(() -> {
+            MessageParser.ParsedMessage parsed = MessageParser.parse(message);
+            if (parsed.type == null) return;
 
-        switch (parsed.type) {
-            case "GAME STATE":
-                handleGameState(MessageParser.parseGameObjects(parsed.payload));
-                break;
-            case "PLAYERS":
-                handlePlayers(MessageParser.parsePlayers(parsed.payload));
-                break;
-            default:
-                break;
-        }
+            switch (parsed.type) {
+                case "GAME STATE":
+                    handleGameState(MessageParser.parseGameObjects(parsed.payload));
+                    handleLevelState(MessageParser.parseLevelState(parsed.payload));
+                    break;
+                case "PLAYERS":
+                    handlePlayers(MessageParser.parsePlayers(parsed.payload));
+                    break;
+                default:
+                    break;
+            }
+        });
     }
 
     private Texture createCircleTexture(int diameter, Color color) {
@@ -218,33 +396,152 @@ public class FirstLevel implements Screen, IScreen {
     }
 
     private void draw() {
-        ScreenUtils.clear(Color.BLACK);
+        // Parse background color from level data
+        Color bgColor = Color.BLACK;
+        if (levelData != null && levelData.backgroundColorHex != null) {
+            try {
+                bgColor = Color.valueOf(levelData.backgroundColorHex);
+            } catch (Exception e) {
+                Gdx.app.log("FirstLevel", "Invalid background color hex: " + levelData.backgroundColorHex);
+            }
+        }
+
+        ScreenUtils.clear(bgColor);
         this.game.viewport.apply();
         this.game.batch.setProjectionMatrix(this.game.viewport.getCamera().combined);
 
         this.game.batch.begin();
 
-        this.game.batch.draw(backgroundTexture, 0, 0, this.game.viewport.getWorldWidth(), this.game.viewport.getWorldHeight());
+        // Draw tile layers
+        for (TileLayer tl : tileLayers) {
+            if (tl.tileMap == null || tl.texture == null) continue;
+            int atlasColumns = tl.texture.getWidth() / tl.tileW;
+            int rows = tl.tileMap.length;
+            for (int r = 0; r < rows; r++) {
+                int[] row = tl.tileMap[r];
+                for (int c = 0; c < row.length; c++) {
+                    int tileIdx = row[c];
+                    if (tileIdx < 0) continue;
+                    int tileCol = tileIdx % atlasColumns;
+                    int tileRow = tileIdx / atlasColumns;
+                    float drawX = tl.offsetX + c * tl.tileW;
+                    float drawY = tl.offsetY + (rows - 1 - r) * tl.tileH;
+                    this.game.batch.draw(tl.texture, drawX, drawY, tl.tileW, tl.tileH,
+                        tileCol * tl.tileW, tileRow * tl.tileH, tl.tileW, tl.tileH, false, false);
+                }
+            }
+        }
+
+        // Draw background if available
+        if (backgroundTexture != null) {
+            this.game.batch.draw(backgroundTexture, 0, 0, this.game.viewport.getWorldWidth(), this.game.viewport.getWorldHeight());
+        }
+
+        // Draw all game objects
+        // posX/posY is the anchor (center), so offset by half dimensions to get bottom-left
         for (GameObject go : gameObjects) {
-            this.game.batch.draw(go.getTexture(), go.getPosX(), go.getPosY() + 80, go.getDimenX(), go.getDimenY());
+            TextureRegion tex = go.getTexture();
+            float drawX = go.getPosX() + go.getDimenX() / 2f;
+            float drawY = go.getPosY() + go.getDimenY() / 2f;
+            if (go instanceof AnimatedGameObject && ((AnimatedGameObject) go).isFlipX()) {
+                this.game.batch.draw(tex,
+                    drawX + go.getDimenX(), drawY,
+                    -go.getDimenX(), go.getDimenY());
+            } else {
+                this.game.batch.draw(tex, drawX, drawY, go.getDimenX(), go.getDimenY());
+            }
+        }
+
+        // Draw player name labels above each PLAYER object
+        for (GameObject go : gameObjects) {
+            if (go.getType() == AnimatedGameObject.GameObjectType.PLAYER) {
+                float drawX = go.getPosX() + go.getDimenX() / 2f;
+                float drawY = go.getPosY() + go.getDimenY() / 2f;
+                glyphLayout.setText(game.font, go.getName());
+                float nameX = drawX + go.getDimenX() / 2f - glyphLayout.width / 2f;
+                float nameY = drawY + go.getDimenY() + glyphLayout.height + 4f;
+                game.font.draw(this.game.batch, glyphLayout, nameX, nameY);
+
+                // Draw key icon above name if player has the key
+                if (go.getHasKey()) {
+                    for (GameObject keyObj : gameObjects) {
+                        if (keyObj.getName().equals("key") &&
+                            keyObj.getType() == AnimatedGameObject.GameObjectType.INTERACTABLE) {
+                            keyObj.setPosX(drawX + go.getDimenX() / 2f - keyObj.getDimenX());
+                            keyObj.setPosY(nameY + 4f);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         this.game.batch.end();
     }
 
     private void handleGameState(GameObjectMessage[] gameObjectsMsg) {
+        ArrayList<GameObject> gameObjectsToDelete = new ArrayList<>();
+
         for (GameObjectMessage gom : gameObjectsMsg) {
+            if (gom.name == null) continue;
             for (GameObject go : gameObjects) {
                 if (gom.name.equals(go.getName())) {
                     go.setPosX(gom.posX);
-                    go.setPosY(gom.posY);
+                    go.setPosY(game.viewport.getWorldHeight() - gom.posY - go.getDimenY());
+                    go.setHasKey(gom.hasKey);
+
+                    // Animation priority: jump > walk > idle
+                    if (gom.isJumping) {
+                        if (!go.getIsJumping()) {
+                            go.setIsJumping(true);
+                            changeAnimation(go.getName(), "quixote_walk_sheet_7");
+                        }
+                    } else {
+                        if (go.getIsJumping()) {
+                            go.setIsJumping(false);
+                        }
+                        if (gom.isMovingLeft || gom.isMovingRight) {
+                            changeAnimation(go.getName(), "quixote_walk");
+                        } else {
+                            changeAnimation(go.getName(), "quixote_idle_anim");
+                        }
+                    }
+
+                    // Flip texture based on movement direction
+                    if (gom.isMovingLeft) {
+                        go.setIsMovingLeft(true);
+                        go.setIsMovingRight(false);
+                        setFlipX(go.getName(), true);
+                    } else if (gom.isMovingRight) {
+                        go.setIsMovingLeft(false);
+                        go.setIsMovingRight(true);
+                        setFlipX(go.getName(), false);
+                    }
+
+                    if (gom.hasCompletedLevel) {
+                        gameObjectsToDelete.add(go);
+                    }
                 }
+            }
+        }
+
+        for (GameObject go : gameObjectsToDelete) {
+            gameObjects.remove(go);
+        }
+    }
+
+    private void setFlipX(String gameObjectName, boolean flip) {
+        for (GameObject go : gameObjects) {
+            if (go.getName().equals(gameObjectName) && go instanceof AnimatedGameObject) {
+                ((AnimatedGameObject) go).setFlipX(flip);
+                break;
             }
         }
     }
 
     private void handlePlayers(PlayerMessage[] players) {
         ArrayList<String> playerNames = new ArrayList<>();
+        ArrayList<GameObject> gameObjectsToDelete = new ArrayList<>();
 
         for (GameObject go : gameObjects) {
             playerNames.add(go.getName());
@@ -255,7 +552,59 @@ public class FirstLevel implements Screen, IScreen {
             game.config.players.add(player.name);
 
             if (!playerNames.contains(player.name)) {
-                gameObjects.add(new GameObject(player.name, characterFrame, 0, 80, 96, 96));
+                if (textureCache.isEmpty()) {
+                    Gdx.app.error("FirstLevel", "No textures loaded, cannot add player: " + player.name);
+                    continue;
+                }
+                Texture spriteTexture = textureCache.values().iterator().next();
+                LevelLoader.SpriteData spriteData = levelData.sprites.get(0);
+                float spriteY = this.game.viewport.getWorldHeight() - spriteData.y - spriteData.height;
+                AnimatedGameObject newPlayer = new AnimatedGameObject(
+                    player.name,
+                    new TextureRegion(spriteTexture),
+                    spriteData.x,
+                    spriteY,
+                    spriteData.width,
+                    spriteData.height,
+                    AnimatedGameObject.GameObjectType.PLAYER
+                );
+                addAllAnimationsTo(newPlayer);
+                newPlayer.playAnimation("quixote_idle_anim");
+                gameObjects.add(newPlayer);
+            }
+        }
+
+        for (int i = 0; i < gameObjects.size(); i++) {
+            if (!game.config.players.contains(gameObjects.get(i).getName()) &&
+                gameObjects.get(i).getType() == AnimatedGameObject.GameObjectType.PLAYER) {
+                gameObjectsToDelete.add(gameObjects.get(i));
+            }
+        }
+
+        for (GameObject go : gameObjectsToDelete) {
+            gameObjects.remove(go);
+        }
+    }
+
+    private void handleLevelState(LevelStateMessage levelState) {
+        if (levelState == null) return;
+        for (GameObject go : gameObjects) {
+            if (go.getName().equals("door") && go instanceof AnimatedGameObject) {
+                ((AnimatedGameObject) go).setFrame(levelState.isDoorOpen ? 1 : 0);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Change animation for a specific game object by animation name (as defined in animations.json)
+     * e.g. changeAnimation("qweqweqwe", "quixote_idle_anim")
+     */
+    public void changeAnimation(String gameObjectName, String animationName) {
+        for (GameObject go : gameObjects) {
+            if (go.getName().equals(gameObjectName) && go instanceof AnimatedGameObject) {
+                ((AnimatedGameObject) go).playAnimation(animationName);
+                break;
             }
         }
     }
