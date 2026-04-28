@@ -10,7 +10,7 @@ public class MessageParser {
     public static ParsedMessage parse(String raw) {
         JsonValue root = reader.parse(raw);
         ParsedMessage msg = new ParsedMessage();
-        msg.type    = root.getString("type");
+        msg.type    = root.getString("type", null);
         msg.payload = root.get("payload");
         return msg;
     }
@@ -30,16 +30,34 @@ public class MessageParser {
 
     public static GameObjectMessage[] parseGameObjects(JsonValue payload) {
         if (payload == null || payload.isNull()) return new GameObjectMessage[0];
-        GameObjectMessage[] gameObjects = new GameObjectMessage[payload.size];
+        JsonValue players = payload.get("players");
+        if (players == null || players.isNull()) return new GameObjectMessage[0];
+        GameObjectMessage[] gameObjects = new GameObjectMessage[players.size];
         int i = 0;
-        for (JsonValue p : payload) {
+        for (JsonValue p : players) {
             GameObjectMessage gom = new GameObjectMessage();
-            gom.name = p.getString("name",   null);
-            gom.posX = p.getFloat("x", 0f);
-            gom.posY = p.getFloat("y", 0f);
+            gom.name             = p.getString("name", null);
+            gom.posX             = p.getFloat("x", 0f);
+            gom.posY             = p.getFloat("y", 0f);
+            gom.isMovingLeft     = p.getBoolean("isMovingLeft", false);
+            gom.isMovingRight    = p.getBoolean("isMovingRight", false);
+            gom.isJumping        = p.getBoolean("isJumping", false);
+            gom.hasKey           = p.getBoolean("hasKey", false);
+            gom.hasCompletedLevel = p.getBoolean("hasCompletedLevel", false);
             gameObjects[i++] = gom;
         }
         return gameObjects;
+    }
+
+    public static LevelStateMessage parseLevelState(JsonValue payload) {
+        if (payload == null || payload.isNull()) return null;
+        JsonValue cl = payload.get("currentLevel");
+        if (cl == null || cl.isNull()) return null;
+        LevelStateMessage ls = new LevelStateMessage();
+        ls.name       = cl.getString("name", null);
+        ls.isDoorOpen = cl.getBoolean("isDoorOpen", false);
+        ls.isKeyTaken = cl.getBoolean("isKeyTaken", false);
+        return ls;
     }
 
     public static class ParsedMessage {

@@ -13,7 +13,18 @@
       "gameplayData": "",
       "x": 0,
       "y": 354,
-      "width": 1021,
+      "width": 384,
+      "height": 158,
+      "color": "blue",
+      "groupId": "__main__"
+    },
+    {
+      "name": "ground",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 672,
+      "y": 354,
+      "width": 352,
       "height": 158,
       "color": "blue",
       "groupId": "__main__"
@@ -37,6 +48,17 @@
       "y": -18,
       "width": 53,
       "height": 532,
+      "color": "blue",
+      "groupId": "__main__"
+    },
+    {
+      "name": "dead_zone",
+      "type": "Default",
+      "gameplayData": "",
+      "x": 384,
+      "y": 448,
+      "width": 288,
+      "height": 64,
       "color": "blue",
       "groupId": "__main__"
     }
