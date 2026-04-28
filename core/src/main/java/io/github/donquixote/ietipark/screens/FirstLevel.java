@@ -146,7 +146,10 @@ public class FirstLevel implements Screen, IScreen {
             addAllAnimationsTo(gameObject);
 
             // Play the animation assigned to this sprite
-            if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
+            if (gameObject.getName().equals("door")) {
+                gameObject.playAnimation("door_animation");
+                gameObject.setFrame(0);
+            } else if (spriteData.animationId != null && animations.containsKey(spriteData.animationId)) {
                 gameObject.playAnimation(animations.get(spriteData.animationId).name);
             }
 
@@ -477,6 +480,8 @@ public class FirstLevel implements Screen, IScreen {
     }
 
     private void handleGameState(GameObjectMessage[] gameObjectsMsg) {
+        ArrayList<GameObject> gameObjectsToDelete = new ArrayList<>();
+
         for (GameObjectMessage gom : gameObjectsMsg) {
             if (gom.name == null) continue;
             for (GameObject go : gameObjects) {
@@ -512,8 +517,16 @@ public class FirstLevel implements Screen, IScreen {
                         go.setIsMovingRight(true);
                         setFlipX(go.getName(), false);
                     }
+
+                    if (gom.hasCompletedLevel) {
+                        gameObjectsToDelete.add(go);
+                    }
                 }
             }
+        }
+
+        for (GameObject go : gameObjectsToDelete) {
+            gameObjects.remove(go);
         }
     }
 
@@ -575,8 +588,11 @@ public class FirstLevel implements Screen, IScreen {
 
     private void handleLevelState(LevelStateMessage levelState) {
         if (levelState == null) return;
-        if (levelState.isDoorOpen) {
-            changeAnimation("door", "door_closed");
+        for (GameObject go : gameObjects) {
+            if (go.getName().equals("door") && go instanceof AnimatedGameObject) {
+                ((AnimatedGameObject) go).setFrame(levelState.isDoorOpen ? 1 : 0);
+                break;
+            }
         }
     }
 

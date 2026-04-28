@@ -19,6 +19,7 @@ public class AnimatedGameObject extends GameObject {
     private int currentFrameIndex;
     private float elapsedTime;
     private boolean flipX;
+    private boolean paused;
 
     public AnimatedGameObject(String name, TextureRegion texture, float posX, float posY, float dimenX, float dimenY, GameObjectType type) {
         super(name, texture, posX, posY, dimenX, dimenY, type);
@@ -53,13 +54,23 @@ public class AnimatedGameObject extends GameObject {
         currentAnimationName = animName;
         currentFrameIndex = 0;
         elapsedTime = 0;
+        paused = false;
         if (entry.frames.length > 0) {
             setTexture(entry.frames[0]);
         }
     }
 
-    public void update(float delta) {
+    /** Jump to a specific frame index and freeze the animation there. */
+    public void setFrame(int index) {
         if (currentAnimation == null || currentAnimation.frames.length == 0) return;
+        currentFrameIndex = Math.max(0, Math.min(index, currentAnimation.frames.length - 1));
+        elapsedTime = 0;
+        paused = true;
+        setTexture(currentAnimation.frames[currentFrameIndex]);
+    }
+
+    public void update(float delta) {
+        if (paused || currentAnimation == null || currentAnimation.frames.length == 0) return;
 
         elapsedTime += delta;
         if (elapsedTime >= currentAnimation.frameDuration) {
