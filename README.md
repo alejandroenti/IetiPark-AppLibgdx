@@ -1,4 +1,13 @@
-# 🎮 IETI Park
+
+
+
+
+
+
+
+
+
+
 
 Joc mòbil multijugador inspirat en [Pico Park](https://picoparkgame.com/en/pp1/), desenvolupat amb **LibGDX**.
 
