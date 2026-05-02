@@ -54,9 +54,10 @@ public class MessageParser {
         JsonValue cl = payload.get("currentLevel");
         if (cl == null || cl.isNull()) return null;
         LevelStateMessage ls = new LevelStateMessage();
-        ls.name       = cl.getString("name", null);
-        ls.isDoorOpen = cl.getBoolean("isDoorOpen", false);
-        ls.isKeyTaken = cl.getBoolean("isKeyTaken", false);
+        ls.name               = cl.getString("name", null);
+        ls.isDoorOpen         = cl.getBoolean("isDoorOpen", false);
+        ls.isKeyTaken         = cl.getBoolean("isKeyTaken", false);
+        ls.isLeverActivated   = cl.getBoolean("isLeverActivated", false);
         return ls;
     }
 
