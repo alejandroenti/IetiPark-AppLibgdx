@@ -16,6 +16,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import io.github.donquixote.ietipark.DonQuixote;
+import io.github.donquixote.ietipark.configuration.LevelStateMessage;
 import io.github.donquixote.ietipark.configuration.MessageParser;
 import io.github.donquixote.ietipark.configuration.PlayerMessage;
 
@@ -136,6 +137,9 @@ public class MainMenu implements Screen, IScreen {
             case "PLAYERS":
                 handlePlayers(MessageParser.parsePlayers(parsed.payload));
                 break;
+            case "GAME STATE":
+                handleLevelState(MessageParser.parseLevelState(parsed.payload));
+                break;
             default:
                 break;
         }
@@ -175,5 +179,20 @@ public class MainMenu implements Screen, IScreen {
                 playerListTable.add(row).expandX().fillX().padBottom(6).row();
             }
         });
+    }
+
+    private void handleLevelState(LevelStateMessage levelState) {
+        if (levelState == null) return;
+
+        switch (levelState.name) {
+            case "first_level":
+                game.setScreen(new FirstLevel(game));
+                break;
+            case "second_level":
+                game.setScreen(new SecondLevel(game));
+                break;
+            default:
+                break;
+        }
     }
 }
