@@ -586,6 +586,12 @@ public class FirstLevel implements Screen, IScreen {
 
     private void handleLevelState(LevelStateMessage levelState) {
         if (levelState == null) return;
+
+        if (levelState.name.equals("second_level")) {
+            game.setScreen(new SecondLevel(game));
+            return;
+        }
+
         GameObject door = gameObjectsByName.get("door");
         ((AnimatedGameObject) door).setFrame(levelState.isDoorOpen ? 1 : 0);
     }
