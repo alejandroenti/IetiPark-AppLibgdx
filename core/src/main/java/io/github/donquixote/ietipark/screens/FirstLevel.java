@@ -38,7 +38,7 @@ public class FirstLevel implements Screen, IScreen {
     }
 
     private ArrayList<TileLayer> tileLayers;
-    private ArrayList<GameObject> gameObjects;
+    private HashMap<String, GameObject> gameObjectsByName;
     private Map<String, Texture> textureCache;
     private Map<String, LevelLoader.AnimationData> animations;
     private Map<String, LevelLoader.AnimationData> animationsByName;
@@ -59,7 +59,7 @@ public class FirstLevel implements Screen, IScreen {
 
     public FirstLevel(DonQuixote game) {
         this.game = game;
-        gameObjects = new ArrayList<>();
+        gameObjectsByName = new HashMap<>();
         textureCache = new HashMap<>();
 
         // Load level data from JSON
@@ -153,7 +153,7 @@ public class FirstLevel implements Screen, IScreen {
                 gameObject.playAnimation(animations.get(spriteData.animationId).name);
             }
 
-            gameObjects.add(gameObject);
+            gameObjectsByName.put(gameObject.getName(), gameObject);
         } catch (Exception e) {
             Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
         }
@@ -189,19 +189,14 @@ public class FirstLevel implements Screen, IScreen {
                 gameObject.playAnimation(animations.get(spriteData.animationId).name);
             }
 
-            gameObjects.add(gameObject);
+            gameObjectsByName.put(gameObject.getName(), gameObject);
         } catch (Exception e) {
             Gdx.app.error("FirstLevel", "Failed to load sprite: " + spriteData.name, e);
         }
     }
 
     private void removePlayerPlaceholder() {
-        for (int i = 0; i < gameObjects.size(); i++) {
-            if (gameObjects.get(i).getName().equals("quixote")) {
-                gameObjects.remove(i);
-                return;
-            }
-        }
+        gameObjectsByName.remove("quixote");
     }
 
     private void addAllAnimationsTo(AnimatedGameObject obj) {
@@ -293,7 +288,7 @@ public class FirstLevel implements Screen, IScreen {
     }
 
     private void updateAnimations(float delta) {
-        for (GameObject go : gameObjects) {
+        for (GameObject go : gameObjectsByName.values()) {
             if (go instanceof AnimatedGameObject) {
                 ((AnimatedGameObject) go).update(delta);
             }
@@ -337,6 +332,8 @@ public class FirstLevel implements Screen, IScreen {
             if (touchpadKnobTexture != null) touchpadKnobTexture.dispose();
             if (jumpBtnTexture != null) jumpBtnTexture.dispose();
         }
+
+        gameObjectsByName.clear();
     }
 
     @Override
@@ -439,7 +436,7 @@ public class FirstLevel implements Screen, IScreen {
 
         // Draw all game objects
         // posX/posY is the anchor (center), so offset by half dimensions to get bottom-left
-        for (GameObject go : gameObjects) {
+        for (GameObject go : gameObjectsByName.values()) {
             TextureRegion tex = go.getTexture();
             float drawX = go.getPosX() + go.getDimenX() / 2f;
             float drawY = go.getPosY() + go.getDimenY() / 2f;
@@ -453,7 +450,7 @@ public class FirstLevel implements Screen, IScreen {
         }
 
         // Draw player name labels above each PLAYER object
-        for (GameObject go : gameObjects) {
+        for (GameObject go : gameObjectsByName.values()) {
             if (go.getType() == AnimatedGameObject.GameObjectType.PLAYER) {
                 float drawX = go.getPosX() + go.getDimenX() / 2f;
                 float drawY = go.getPosY() + go.getDimenY() / 2f;
@@ -464,14 +461,9 @@ public class FirstLevel implements Screen, IScreen {
 
                 // Draw key icon above name if player has the key
                 if (go.getHasKey()) {
-                    for (GameObject keyObj : gameObjects) {
-                        if (keyObj.getName().equals("key") &&
-                            keyObj.getType() == AnimatedGameObject.GameObjectType.INTERACTABLE) {
-                            keyObj.setPosX(drawX + go.getDimenX() / 2f - keyObj.getDimenX());
-                            keyObj.setPosY(nameY + 4f);
-                            break;
-                        }
-                    }
+                    GameObject keyObj = gameObjectsByName.get("key");
+                    keyObj.setPosX(drawX + go.getDimenX() / 2f - keyObj.getDimenX());
+                    keyObj.setPosY(nameY + 4f);
                 }
             }
         }
@@ -484,7 +476,7 @@ public class FirstLevel implements Screen, IScreen {
 
         for (GameObjectMessage gom : gameObjectsMsg) {
             if (gom.name == null) continue;
-            for (GameObject go : gameObjects) {
+            for (GameObject go : gameObjectsByName.values()) {
                 if (gom.name.equals(go.getName())) {
                     go.setPosX(gom.posX);
                     go.setPosY(game.viewport.getWorldHeight() - gom.posY - go.getDimenY());
@@ -520,18 +512,24 @@ public class FirstLevel implements Screen, IScreen {
 
                     if (gom.hasCompletedLevel) {
                         gameObjectsToDelete.add(go);
+                        GameObject keyObj = gameObjectsByName.get("key");
+                        if (keyObj != null) {
+                            gameObjectsToDelete.add(gameObjectsByName.get("key"));
+                        }
                     }
+
+
                 }
             }
         }
 
         for (GameObject go : gameObjectsToDelete) {
-            gameObjects.remove(go);
+            gameObjectsByName.remove(go.getName());
         }
     }
 
     private void setFlipX(String gameObjectName, boolean flip) {
-        for (GameObject go : gameObjects) {
+        for (GameObject go : gameObjectsByName.values()) {
             if (go.getName().equals(gameObjectName) && go instanceof AnimatedGameObject) {
                 ((AnimatedGameObject) go).setFlipX(flip);
                 break;
@@ -543,7 +541,7 @@ public class FirstLevel implements Screen, IScreen {
         ArrayList<String> playerNames = new ArrayList<>();
         ArrayList<GameObject> gameObjectsToDelete = new ArrayList<>();
 
-        for (GameObject go : gameObjects) {
+        for (GameObject go : gameObjectsByName.values()) {
             playerNames.add(go.getName());
         }
 
@@ -570,30 +568,26 @@ public class FirstLevel implements Screen, IScreen {
                 );
                 addAllAnimationsTo(newPlayer);
                 newPlayer.playAnimation("quixote_idle_anim");
-                gameObjects.add(newPlayer);
+                gameObjectsByName.put(newPlayer.getName(), newPlayer);
             }
         }
 
-        for (int i = 0; i < gameObjects.size(); i++) {
-            if (!game.config.players.contains(gameObjects.get(i).getName()) &&
-                gameObjects.get(i).getType() == AnimatedGameObject.GameObjectType.PLAYER) {
-                gameObjectsToDelete.add(gameObjects.get(i));
+        for (GameObject go : gameObjectsByName.values()) {
+            if (!game.config.players.contains(go.getName()) &&
+                go.getType() == AnimatedGameObject.GameObjectType.PLAYER) {
+                gameObjectsToDelete.add(go);
             }
         }
 
         for (GameObject go : gameObjectsToDelete) {
-            gameObjects.remove(go);
+            gameObjectsByName.remove(go.getName());
         }
     }
 
     private void handleLevelState(LevelStateMessage levelState) {
         if (levelState == null) return;
-        for (GameObject go : gameObjects) {
-            if (go.getName().equals("door") && go instanceof AnimatedGameObject) {
-                ((AnimatedGameObject) go).setFrame(levelState.isDoorOpen ? 1 : 0);
-                break;
-            }
-        }
+        GameObject door = gameObjectsByName.get("door");
+        ((AnimatedGameObject) door).setFrame(levelState.isDoorOpen ? 1 : 0);
     }
 
     /**
@@ -601,11 +595,9 @@ public class FirstLevel implements Screen, IScreen {
      * e.g. changeAnimation("qweqweqwe", "quixote_idle_anim")
      */
     public void changeAnimation(String gameObjectName, String animationName) {
-        for (GameObject go : gameObjects) {
-            if (go.getName().equals(gameObjectName) && go instanceof AnimatedGameObject) {
-                ((AnimatedGameObject) go).playAnimation(animationName);
-                break;
-            }
+        GameObject go = gameObjectsByName.get(gameObjectName);
+        if (go instanceof AnimatedGameObject) {
+            ((AnimatedGameObject) go).playAnimation(animationName);
         }
     }
 }

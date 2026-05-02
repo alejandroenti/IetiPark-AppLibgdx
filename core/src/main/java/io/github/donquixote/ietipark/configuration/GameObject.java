@@ -1,6 +1,5 @@
 package io.github.donquixote.ietipark.configuration;
 
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class GameObject {
@@ -35,6 +34,7 @@ public class GameObject {
         this.isJumping = false;
         this.isMovingLeft = false;
         this.isMovingRight = false;
+        this.hasKey = false;
         this.type = type;
     }
 
