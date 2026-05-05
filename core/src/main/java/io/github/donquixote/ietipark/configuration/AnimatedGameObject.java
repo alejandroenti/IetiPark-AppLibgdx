@@ -1,9 +1,10 @@
 package io.github.donquixote.ietipark.configuration;
 
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class AnimatedGameObject extends GameObject {
 
@@ -31,11 +32,15 @@ public class AnimatedGameObject extends GameObject {
     public void addAnimation(String animName, Texture spriteSheet, int frameWidth, int frameHeight,
                              int startFrame, int endFrame, float fps, boolean loop) {
         TextureRegion[][] all = TextureRegion.split(spriteSheet, frameWidth, frameHeight);
+        int totalRows = all.length;
         int totalCols = all[0].length;
-        int count = endFrame - startFrame + 1;
+        int totalFrames = totalRows * totalCols;
+        int safeStart = Math.max(0, Math.min(startFrame, totalFrames - 1));
+        int safeEnd   = Math.max(safeStart, Math.min(endFrame, totalFrames - 1));
+        int count = safeEnd - safeStart + 1;
         TextureRegion[] frames = new TextureRegion[count];
         for (int i = 0; i < count; i++) {
-            int idx = startFrame + i;
+            int idx = safeStart + i;
             frames[i] = all[idx / totalCols][idx % totalCols];
         }
         AnimationEntry entry = new AnimationEntry();
